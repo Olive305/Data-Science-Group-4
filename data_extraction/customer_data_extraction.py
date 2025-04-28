@@ -11,4 +11,5 @@ def find_subtables():
             subtables_amount += 1
     print(subtables_amount)
 
+
 find_subtables()
