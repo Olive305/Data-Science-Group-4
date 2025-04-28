@@ -7,3 +7,9 @@
 - `data_extraction` contains all the code to extract the data
 - `experimental_code` stores code used for testing and trying stuff
 - `web_interface_dashboard` contains the code for the final dashboard
+
+## Using the Pipenv environment
+
+- For not needing to install all dependencies manually
+- First run `pipenv install`
+- Choose pipenv as interpretor
