@@ -35,7 +35,7 @@ def visualize_data(df):
         if not filtered_df.empty:
             # x axis: year
             # y axes: market share of insured and market share of members
-            # This should add a plot for both
+            # This should add a plot for both values
             ax = filtered_df.plot(kind='line', x='Jahr', y='Marktanteil Versicherte', color='blue', legend=True)
             filtered_df.plot(kind='line', x='Jahr', y='Marktanteil Mitglieder', color='red', secondary_y=True, ax=ax, legend=True)
             ax.set_ylabel('Marktanteil Versicherte')
