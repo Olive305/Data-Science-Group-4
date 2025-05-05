@@ -16,10 +16,10 @@ def find_subtables(df_data):
             subtables_amount += 1
     print("\nNumber of tables: ", subtables_amount)
 
-# Function to find the end of the subtable
+
 def find_subtable(df, start_row):
     """
-    Find the end of a subtable in a DataFrame starting from a given row.
+    Find the end of a subtable in a DataFrame starting from a given row and then return it.
     Parameters:
         df (pd.DataFrame): DataFrame to analyze
         start_row (int): Row index to start searching for the end of the subtable
@@ -44,11 +44,14 @@ def find_subtable(df, start_row):
 
 def find_subtables_with_question(df_data):
     """
-    Find and count all subtables in the excel file. Then the subtables are grouped, if they have the same question.
+    Find and count all subtables in the excel file.
+    All subtables with the same question are grouped together.
+
 
     Parameters:
         df (pd.DataFrame): DataFrame to analyze
     """
+
     
     subtables = []  # Store the subtables and their corresponding questions
     current_question_lines = []
@@ -76,29 +79,104 @@ def find_subtables_with_question(df_data):
     # Group the subtables by their questions
     grouped_subtables = []
     last_question_lines = []
-    for subtable in subtables:
-        [question_lines, table] = subtable
-        if question_lines == last_question_lines:
-            grouped_subtables[-1][1] = pd.concat([grouped_subtables[-1][1], table.iloc[:, 2:]], ignore_index=True)
+
+    for question_lines, table in subtables:
+        if last_question_lines == question_lines:
+            # Reset index to default integer index to avoid misalignment
+            table = table.reset_index(drop=True)
+            grouped_subtables[-1][1] = pd.concat([
+                grouped_subtables[-1][1].reset_index(drop=True), 
+                table
+            ], axis=1)
         else:
-            grouped_subtables.append(subtable)
+            grouped_subtables.append([question_lines, table])
             last_question_lines = question_lines
+
         
+    if False:
+        for subtable in subtables:
+            print(subtable)
     
-    print("Subtables separated by 2-line gaps:")
-    #for subtable in subtables:
-    #    print(subtable)
-    print(grouped_subtables[0])
+    if True:
+        print(grouped_subtables[4])
+
+    # Print all the questions
+    if False:
+        print("\nQuestions:")
+        for subtable in grouped_subtables:
+            question_lines = subtable[0]
+            print(question_lines, "\n\n")
 
     # Print the number of subtables
     print("\nNumber of subtables: ", len(grouped_subtables))
+
+    return grouped_subtables
+
+def analyze_satisfaction(grouped_subtables):
+    """
+    Analyze the satisfaction of the customers based on the grouped subtables.
+    We use the subtable with index 4 (Globalzufriedenheit = Global satisfaction) for this analysis.
+
+    Parameters:
+        grouped_subtables (list): List of grouped subtables
+    """
+    question, table = grouped_subtables[4]
+
+    # Dynamically locate the columns based on the values in the first row
+    selected_columns = ["Gesetzliche Krankenkasse", "Vergleich Kassensysteme", "AOK", "BKK", "BKK (Fortsetzung)", "IKK"]
+
+    selected_columns_dict = {}
+
+    column_indices = []
+    seen_columns = set()
+    for i, col in enumerate(table.iloc[0].values):
+        if col in selected_columns and col not in seen_columns:
+            column_indices.append(i)
+            seen_columns.add(col)
+            selected_columns_dict[i] = col
+    
+    for i in range(len(column_indices)):
+        # starting from this column, check if the next column is empty
+        # while the next column has nan values, add it to the column_indices
+        df_index = column_indices[i]
+        while df_index + 1 < len(table.columns) and pd.isna(table.iloc[0, df_index + 1]):
+            column_indices.append(df_index + 1)
+            df_index += 1
+            selected_columns_dict[df_index] = selected_columns[i]
+
+    # Remove duplicates and sort the column indices
+    column_indices = sorted(set(column_indices))
+
+    # Extract the Mittelwert values for the selected columns
+    satisfaction_values = table.iloc[15, column_indices].values
+
+    company_names = []
+
+    # Extract the health insurance company names from the second row
+    for column_index in column_indices:
+        company_names.append(selected_columns_dict[column_index] + " " + str(table.iloc[1, column_index]))
+
+    # Combine the company names and satisfaction values, then sort by satisfaction
+    # Filter out instances where satisfaction_values is not a number
+    valid_entries = [(name, value) for name, value in zip(company_names, satisfaction_values) if pd.notna(value) and isinstance(value, (int, float))]
+    
+    # Sort the valid entries by satisfaction values in descending order
+    sorted_companies = sorted(valid_entries, key=lambda x: x[1], reverse=True)
+
+
+    print("\nHealth insurance companies sorted by satisfaction:")
+    print(sorted_companies)
 
 
 if __name__ == "__main__":
 
     # Read the excel file  
-    file_path = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2024.xlsx')
+    file_path = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx')
     df_data = pd.read_excel(file_path, sheet_name='Band', header=None)
     
     # Find and count all subtables
-    find_subtables_with_question(df_data)
+    grouped_subtables = find_subtables_with_question(df_data)
+
+    # Get the satisfaction per health insurance company
+    analyze_satisfaction(grouped_subtables)
+    
