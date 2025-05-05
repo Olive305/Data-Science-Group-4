@@ -61,6 +61,8 @@ def find_subtables_with_question(df_data):
         # Store the first two lines as the current question lines
         if i < len(df_data) - 1:
             current_question_lines = df_data.iloc[i:i+2].values.flatten().tolist()
+            # Remove all NaN values from the question lines
+            current_question_lines = [line for line in current_question_lines if pd.notna(line)]
             i += 2
         else:
             break
@@ -97,8 +99,8 @@ def find_subtables_with_question(df_data):
         for subtable in subtables:
             print(subtable)
     
-    if True:
-        print(grouped_subtables[4])
+    if False:
+        print(grouped_subtables)
 
     # Print all the questions
     if False:
@@ -112,15 +114,18 @@ def find_subtables_with_question(df_data):
 
     return grouped_subtables
 
-def analyze_satisfaction(grouped_subtables):
+def analyze_subtable(grouped_subtables, number=4, df=None):
     """
     Analyze the satisfaction of the customers based on the grouped subtables.
     We use the subtable with index 4 (Globalzufriedenheit = Global satisfaction) for this analysis.
 
     Parameters:
         grouped_subtables (list): List of grouped subtables
+        number (int): number of the subtable to analyze
+        df (dataframe): dataframe to add the values
     """
-    question, table = grouped_subtables[4]
+    print(grouped_subtables[number])
+    question, table = grouped_subtables[number]
 
     # Dynamically locate the columns based on the values in the first row
     selected_columns = ["Gesetzliche Krankenkasse", "Vergleich Kassensysteme", "AOK", "BKK", "BKK (Fortsetzung)", "IKK"]
@@ -154,7 +159,7 @@ def analyze_satisfaction(grouped_subtables):
 
     # Extract the health insurance company names from the second row
     for column_index in column_indices:
-        company_names.append(selected_columns_dict[column_index] + " " + str(table.iloc[1, column_index]))
+        company_names.append(selected_columns_dict[column_index] + " - " + str(table.iloc[1, column_index]))
 
     # Combine the company names and satisfaction values, then sort by satisfaction
     # Filter out instances where satisfaction_values is not a number
@@ -167,16 +172,50 @@ def analyze_satisfaction(grouped_subtables):
     print("\nHealth insurance companies sorted by satisfaction:")
     print(sorted_companies)
 
+    # if there are no valid entries, skip adding to the DataFrame
+    if not valid_entries:
+        print(f"No valid entries found for subtable {number}. Skipping...")
+        return df
+
+    # if a dataframe was passed as an parameter, then add the values as a line 
+    if df is not None:
+        df.loc[" ".join(question[0])] = {name: value for name, value in sorted_companies}
+        return df
+    else:
+        # Create a new DataFrame with the values that would be added
+        df = pd.DataFrame(
+            {name: [value] for name, value in sorted_companies},
+            index=["".join(question[0])]
+        )
+        return df
+        
+
 
 if __name__ == "__main__":
 
     # Read the excel file  
-    file_path = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx')
+    file_path = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2024.xlsx')
     df_data = pd.read_excel(file_path, sheet_name='Band', header=None)
     
     # Find and count all subtables
     grouped_subtables = find_subtables_with_question(df_data)
 
-    # Get the satisfaction per health insurance company
-    analyze_satisfaction(grouped_subtables)
+    summary_df = None
+
+    # analyze all the subtables and get their values
+    for i in range(len(grouped_subtables)):
+        try:
+            summary_df = analyze_subtable(grouped_subtables, i, summary_df)
+        except Exception as e:
+            print(f"Error analyzing subtable {i}: {e}")
+
+    print("Summary_df:\n", summary_df)
+    
+    # Save the summary_df as a file
+    if summary_df is not None:
+        output_dir = os.path.join(os.path.dirname(__file__), '../data/custom_files/')
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, 'summary_df.xlsx')
+        summary_df.to_excel(output_file)
+        print(f"Summary DataFrame saved to {output_file}")
     
