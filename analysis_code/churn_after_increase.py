@@ -1,9 +1,12 @@
 import pandas as pd
 import sklearn as sk
+import os
 
 
 #import data
-df = pd.read_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
+location = os.path.join(os.path.dirname(__file__), '../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
+df = pd.read_excel(location)
+
 
 #show all of the data with print
 pd.set_option('display.max_rows', None)
