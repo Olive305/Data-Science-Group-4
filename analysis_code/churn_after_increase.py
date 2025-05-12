@@ -44,6 +44,7 @@ if False:
     plt.ylabel('Mitglieder_diff_next')
     plt.grid(True)
     plt.show()
+    
 
 # Print the first 5 rows of the dataframe
 print(df.head())
