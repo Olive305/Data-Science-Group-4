@@ -1,5 +1,6 @@
 import pandas as pd
 import sklearn as sk
+import matplotlib.pyplot as plt
 import os
 
 
@@ -20,11 +21,11 @@ df['Date'] = pd.to_datetime(df['Jahr'].astype(str) + 'Q'+ df['Quartal'].astype(s
 #sort by Name and Date => to calculate the difference in members for next year per insurer
 df = df.sort_values(by = ['Krankenkasse','Date'])
 
-#calculate the increase in fees compared to the previous year
-df['Zusatzbeitrag_diff'] = df.groupby('Krankenkasse')['Zusatzbeitrag'].diff()
+#calculate the increase/decrease in fees as a percentage compared to the previous year
+df['Zusatzbeitrag_diff'] = df.groupby('Krankenkasse')['Zusatzbeitrag'].pct_change()
 
-#calculate the amount of members lost compared to the year after the current year
-df['Mitglieder_diff_next'] = df.groupby('Krankenkasse')['Mitglieder'].shift(-1) - df['Mitglieder']
+#calculate the percentage difference in members compared to the year after the current year
+df['Mitglieder_diff_next'] = (df.groupby('Krankenkasse')['Mitglieder'].shift(-1) - df['Mitglieder']) / df['Mitglieder']
 
 df['Zusatzbeitrag_diff'] = df['Zusatzbeitrag_diff'].fillna(0)
 df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'].fillna(0)
@@ -32,6 +33,17 @@ df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'].fillna(0)
 #change in fee = independant variable; change in membership = dependant variable
 X = df[['Zusatzbeitrag_diff']]
 y = df['Mitglieder_diff_next']
+
+# Show the values (x and y) in a graph to look at their coherence
+# Each value pair as a dot in the graph
+
+plt.scatter(X, y, alpha=0.5)
+plt.title('Zusatzbeitrag_diff vs Mitglieder_diff_next')
+plt.xlabel('Zusatzbeitrag_diff')
+plt.ylabel('Mitglieder_diff_next')
+plt.grid(True)
+plt.show()
+
 
 #train and test
 X_train, X_test, y_train, y_test = (sk.model_selection.train_test_split(X, y, test_size = 0.2, random_state = 69))
@@ -43,11 +55,10 @@ model.fit(X_train, y_train)
 
 y_pred = model.predict(X_test)
 #print results
+print("\n")
 print("Coeficient:", model.coef_)
 print("Intercept ):", model.intercept_)
 print("R²:", sk.metrics.r2_score(y_test, y_pred))
 print("MSE:", sk.metrics.mean_squared_error(y_test, y_pred))
-
-
 
 print(df)
