@@ -21,14 +21,15 @@ df['Date'] = pd.to_datetime(df['Jahr'].astype(str) + 'Q'+ df['Quartal'].astype(s
 #sort by Name and Date => to calculate the difference in members for next year per insurer
 df = df.sort_values(by = ['Krankenkasse','Date'])
 
-#calculate the increase/decrease in fees as a percentage compared to the previous year
+# Ensure 'Zusatzbeitrag' is numeric and fill NaN values with 0
+df['Zusatzbeitrag'] = pd.to_numeric(df['Zusatzbeitrag'], errors='coerce').fillna(0)
+
+# Calculate the increase/decrease in fees as a percentage compared to the previous year
 df['Zusatzbeitrag_diff'] = df.groupby('Krankenkasse')['Zusatzbeitrag'].pct_change()
+df['Zusatzbeitrag_diff'] = df['Zusatzbeitrag_diff'].fillna(0)
 
 #calculate the percentage difference in members compared to the year after the current year
 df['Mitglieder_diff_next'] = (df.groupby('Krankenkasse')['Mitglieder'].shift(-1) - df['Mitglieder']) / df['Mitglieder']
-
-df['Zusatzbeitrag_diff'] = df['Zusatzbeitrag_diff'].fillna(0)
-df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'].fillna(0)
 
 #change in fee = independant variable; change in membership = dependant variable
 X = df[['Zusatzbeitrag_diff']]
@@ -36,13 +37,29 @@ y = df['Mitglieder_diff_next']
 
 # Show the values (x and y) in a graph to look at their coherence
 # Each value pair as a dot in the graph
+if False: 
+    plt.scatter(X, y, alpha=0.5)
+    plt.title('Zusatzbeitrag_diff vs Mitglieder_diff_next')
+    plt.xlabel('Zusatzbeitrag_diff')
+    plt.ylabel('Mitglieder_diff_next')
+    plt.grid(True)
+    plt.show()
 
-plt.scatter(X, y, alpha=0.5)
-plt.title('Zusatzbeitrag_diff vs Mitglieder_diff_next')
-plt.xlabel('Zusatzbeitrag_diff')
-plt.ylabel('Mitglieder_diff_next')
-plt.grid(True)
-plt.show()
+# Print the first 5 rows of the dataframe
+print(df.head())
+
+# Create a table which shows the price increase over time
+if True:
+    plt.figure(figsize=(10, 6))
+    for name, group in df.groupby('Krankenkasse'):
+        plt.plot(group['Date'], group['Zusatzbeitrag_diff'], marker='o', label=name, alpha=0.7)
+
+    plt.title('Price Increase Over Time')
+    plt.xlabel('Time')
+    plt.ylabel('Price Increase (Zusatzbeitrag_diff)')
+    plt.legend(loc='best', fontsize='small', title='Krankenkasse')
+    plt.grid(True)
+    plt.show()
 
 
 #train and test
