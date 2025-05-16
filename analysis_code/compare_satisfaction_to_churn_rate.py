@@ -83,6 +83,18 @@ df_kundenmonitor_all = pd.merge(
     how='left'
 )
 
+
+# Fill nan values with 2.5
+df_kundenmonitor_all = df_kundenmonitor_all.fillna(2.5)
+
+if False:
+    # Store this as a excel file
+    output_path = os.path.join(os.path.dirname(__file__), '../data/custom_files/kundenmonitor_churn_merged.xlsx')
+    df_kundenmonitor_all.to_excel(output_path, index=False)
+
+
+print(df_kundenmonitor_all.head)
+
 # Select satisfaction columns (skip 'Krankenkasse' and 'Year')
 satisfaction_columns = df_kundenmonitor_all.columns.difference(['Krankenkasse', 'Year', 'Churn_Rate_2023', 'Churn_Rate_2024'])
 
@@ -114,6 +126,10 @@ y_scaler = StandardScaler()
 y_train = y_scaler.fit_transform(y_train)
 y_test = y_scaler.transform(y_test)
 
+# Print the normalized values
+print("Normalized y_train:", y_train.flatten())
+print("Normalized y_test:", y_test.flatten())
+
 # Convert data to PyTorch tensors
 X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
 y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
@@ -126,17 +142,17 @@ class NeuralNetwork(nn.Module):
         super(NeuralNetwork, self).__init__()
 
         self.model = nn.Sequential(
-            nn.Linear(input_size, 128),
-            nn.BatchNorm1d(128),
+            nn.Linear(input_size, 16),
+            nn.BatchNorm1d(16),
             nn.Sigmoid(),
             nn.Dropout(0.3),
 
-            nn.Linear(128, 128),
-            nn.BatchNorm1d(128),
+            nn.Linear(16, 32),
+            nn.BatchNorm1d(32),
             nn.Sigmoid(),
             nn.Dropout(0.3),
 
-            nn.Linear(128, 64),
+            nn.Linear(32, 64),
             nn.BatchNorm1d(64),
             nn.Sigmoid(),
             nn.Dropout(0.3),
