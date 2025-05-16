@@ -194,7 +194,7 @@ def analyze_subtable(grouped_subtables, number=4, df=None):
 if __name__ == "__main__":
 
     # Read the excel file  
-    file_path = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2024.xlsx')
+    file_path = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx')
     df_data = pd.read_excel(file_path, sheet_name='Band', header=None)
     
     # Find and count all subtables
