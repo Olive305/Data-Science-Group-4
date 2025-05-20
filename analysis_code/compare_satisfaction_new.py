@@ -7,18 +7,10 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-
-# import data
-location = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx')
-df_Kundenmonitor2023 = pd.read_excel(location, sheet_name="EE")
-location = os.path.join(os.path.dirname(__file__), '../data/custom_files/summary_df_2024.xlsx')
-df_Kundenmonitor2024 = pd.read_excel(location)
 location = os.path.join(os.path.dirname(__file__), '../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
 df_churn = pd.read_excel(location)
-
-# Print heads for inspection
-print(df_Kundenmonitor2023.head())
-print(df_Kundenmonitor2024.head())
+location = os.path.join(os.path.dirname(__file__), '../data/custom_files/kundenmonitor_churn_merged.xlsx')
+df_merged = pd.read_excel(location)
 
 # Combine Year and Quarter for easier calculations
 df_churn['Date'] = pd.to_datetime(df_churn['Jahr'].astype(str) + 'Q' + df_churn['Quartal'].astype(str))
@@ -32,64 +24,35 @@ average_churn = df_churn.groupby('Krankenkasse')['Mitglieder_diff_next'].mean().
 # Create a new DataFrame with the average churn values
 df_average_churn = average_churn.rename(columns={'Mitglieder_diff_next': 'Average_Churn_Rate'})
 
+# Use correct Krankenkasse names in the second part also
+
 # Add a column to the dataframe with the churn rate in 2023 and 2024
 df_churn_2023 = df_churn[df_churn['Jahr'] == 2023].groupby('Krankenkasse')['Mitglieder_diff_next'].mean().reset_index()
 df_churn_2023 = df_churn_2023.rename(columns={'Mitglieder_diff_next': 'Churn_Rate_2023'})
 df_churn_2024 = df_churn[df_churn['Jahr'] == 2024].groupby('Krankenkasse')['Mitglieder_diff_next'].mean().reset_index()
 df_churn_2024 = df_churn_2024.rename(columns={'Mitglieder_diff_next': 'Churn_Rate_2024'})
-df_average_churn = pd.merge(df_average_churn, df_churn_2023, on='Krankenkasse', how='left')
-df_average_churn = pd.merge(df_average_churn, df_churn_2024, on='Krankenkasse', how='left')
 
-print(df_average_churn.head)
+# Add these values in the df_merged dataframe
+df_merged = df_merged.merge(df_churn_2023, on='Krankenkasse', how='left', suffixes=('', '_new'))
+df_merged = df_merged.merge(df_churn_2024, on='Krankenkasse', how='left', suffixes=('', '_new'))
 
-# Prepare both Kundenmonitor datasets for merging
-def prepare_kundenmonitor(df, year):
-    df_t = df.set_index('Unnamed: 0').transpose()
-    df_t = df_t.reset_index().rename(columns={'index': 'Krankenkasse'})
-    df_t['Year'] = year
-    # Deduplicate column names robustly
-    if hasattr(pd.io.parsers, 'ParserBase'):
-        df_t.columns = pd.io.parsers.ParserBase._maybe_dedup_names(list(df_t.columns))
-    else:
-        # Manual deduplication fallback
-        def dedup_columns(cols):
-            counts = {}
-            new_cols = []
-            for col in cols:
-                if col not in counts:
-                    counts[col] = 0
-                    new_cols.append(col)
-                else:
-                    counts[col] += 1
-                    new_cols.append(f"{col}.{counts[col]}")
-            return new_cols
-        df_t.columns = dedup_columns(list(df_t.columns))
-    return df_t
+df_merged['Churn_Rate_2023'] = df_merged['Churn_Rate_2023_new'].combine_first(df_merged['Churn_Rate_2023'])
+df_merged['Churn_Rate_2024'] = df_merged['Churn_Rate_2024_new'].combine_first(df_merged['Churn_Rate_2024'])
 
-df_Kundenmonitor2023_t = prepare_kundenmonitor(df_Kundenmonitor2023, 2023)
-df_Kundenmonitor2024_t = prepare_kundenmonitor(df_Kundenmonitor2024, 2024)
-
-# Align columns before concatenation to avoid InvalidIndexError
-common_cols = df_Kundenmonitor2023_t.columns.intersection(df_Kundenmonitor2024_t.columns)
-df_Kundenmonitor2023_t = df_Kundenmonitor2023_t[common_cols]
-df_Kundenmonitor2024_t = df_Kundenmonitor2024_t[common_cols]
-
-# Concatenate both years
-df_kundenmonitor_all = pd.concat([df_Kundenmonitor2023_t, df_Kundenmonitor2024_t], ignore_index=True)
-df_kundenmonitor_all = pd.merge(
-    df_kundenmonitor_all,
-    df_average_churn[['Krankenkasse', 'Churn_Rate_2023', 'Churn_Rate_2024']],
-    on='Krankenkasse',
-    how='left'
-)
+df_merged = df_merged.drop(columns=['Churn_Rate_2023_new', 'Churn_Rate_2024_new'])
 
 if False:
-    # Store this as a excel file
     output_path = os.path.join(os.path.dirname(__file__), '../data/custom_files/kundenmonitor_churn_merged.xlsx')
-    df_kundenmonitor_all.to_excel(output_path, index=False)
+    df_merged.to_excel(output_path, index=False)
 
+# Check correlation of all features with churn rates
+correlation_matrix = df_merged.corr(numeric_only=True)
+print("Correlation with Churn_Rate_2023:")
+print(correlation_matrix['Churn_Rate_2023'].sort_values(ascending=False))
+print("\nCorrelation with Churn_Rate_2024:")
+print(correlation_matrix['Churn_Rate_2024'].sort_values(ascending=False))
 
-print(df_kundenmonitor_all.head)
+df_kundenmonitor_all = df_merged
 
 # Select satisfaction columns (skip 'Krankenkasse' and 'Year')
 satisfaction_columns = df_kundenmonitor_all.columns.difference(['Krankenkasse', 'Year', 'Churn_Rate_2023', 'Churn_Rate_2024'])
@@ -167,7 +130,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Train the model
-epochs = 20
+epochs = 40
 batch_size = 32
 for epoch in range(epochs):
     model.train()
