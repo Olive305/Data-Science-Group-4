@@ -52,7 +52,7 @@ def find_subtables_with_question(df_data):
         df (pd.DataFrame): DataFrame to analyze
     """
 
-    
+
     subtables = []  # Store the subtables and their corresponding questions
     current_question_lines = []
     
@@ -87,20 +87,22 @@ def find_subtables_with_question(df_data):
             # Reset index to default integer index to avoid misalignment
             table = table.reset_index(drop=True)
             grouped_subtables[-1][1] = pd.concat([
-                grouped_subtables[-1][1].reset_index(drop=True), 
+                grouped_subtables[-1][1].reset_index(drop=True),
                 table
             ], axis=1)
         else:
             grouped_subtables.append([question_lines, table])
             last_question_lines = question_lines
 
-        
+
     if False:
         for subtable in subtables:
             print(subtable)
-    
-    if False:
-        print(grouped_subtables)
+
+    print("Subtables separated by 2-line gaps:")
+    #for subtable in subtables:
+    #    print(subtable)
+    print(grouped_subtables[0])
 
     # Print all the questions
     if False:
@@ -139,7 +141,7 @@ def analyze_subtable(grouped_subtables, number=4, df=None):
             column_indices.append(i)
             seen_columns.add(col)
             selected_columns_dict[i] = col
-    
+
     for i in range(len(column_indices)):
         # starting from this column, check if the next column is empty
         # while the next column has nan values, add it to the column_indices
@@ -164,7 +166,7 @@ def analyze_subtable(grouped_subtables, number=4, df=None):
     # Combine the company names and satisfaction values, then sort by satisfaction
     # Filter out instances where satisfaction_values is not a number
     valid_entries = [(name, value) for name, value in zip(company_names, satisfaction_values) if pd.notna(value) and isinstance(value, (int, float))]
-    
+
     # Sort the valid entries by satisfaction values in descending order
     sorted_companies = sorted(valid_entries, key=lambda x: x[1], reverse=True)
 
@@ -177,7 +179,7 @@ def analyze_subtable(grouped_subtables, number=4, df=None):
         print(f"No valid entries found for subtable {number}. Skipping...")
         return df
 
-    # if a dataframe was passed as an parameter, then add the values as a line 
+    # if a dataframe was passed as an parameter, then add the values as a line
     if df is not None:
         df.loc[" ".join(question[0])] = {name: value for name, value in sorted_companies}
         return df
@@ -188,7 +190,7 @@ def analyze_subtable(grouped_subtables, number=4, df=None):
             index=["".join(question[0])]
         )
         return df
-        
+
 
 
 if __name__ == "__main__":
@@ -210,7 +212,7 @@ if __name__ == "__main__":
             print(f"Error analyzing subtable {i}: {e}")
 
     print("Summary_df:\n", summary_df)
-    
+
     # Save the summary_df as a file
     if summary_df is not None:
         output_dir = os.path.join(os.path.dirname(__file__), '../data/custom_files/')
@@ -218,4 +220,4 @@ if __name__ == "__main__":
         output_file = os.path.join(output_dir, 'summary_df.xlsx')
         summary_df.to_excel(output_file)
         print(f"Summary DataFrame saved to {output_file}")
-    
+
