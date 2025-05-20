@@ -15,8 +15,8 @@ df_merged = pd.read_excel(location)
 # Combine Year and Quarter for easier calculations
 df_churn['Date'] = pd.to_datetime(df_churn['Jahr'].astype(str) + 'Q' + df_churn['Quartal'].astype(str))
 
-# Calculate the percentage difference in members compared to the year after the current year
-df_churn['Mitglieder_diff_next'] = (df_churn.groupby('Krankenkasse')['Mitglieder'].shift(-1) - df_churn['Mitglieder']) / df_churn['Mitglieder']
+#calculate the amount of members lost compared to the year after the current year
+df_churn['Mitglieder_diff_next'] = df_churn.groupby('Krankenkasse')['Mitglieder'].shift(-1) - df_churn['Mitglieder']
 
 # Calculate the average churn rate for each insurance company
 average_churn = df_churn.groupby('Krankenkasse')['Mitglieder_diff_next'].mean().reset_index()
