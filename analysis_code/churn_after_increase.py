@@ -5,7 +5,7 @@ import os
 from sklearn.preprocessing import StandardScaler
 
 #import data
-df = pd.read_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
+df = pd.read_excel(os.path.join(os.path.dirname(__file__), '../data/Zusatzbeitrag_je Kasse je Quartal.xlsx'))
 
 #show all of the data with print
 pd.set_option('display.max_rows', None)
@@ -87,5 +87,3 @@ print("Intercept ):", model.intercept_)
 print("R²:", r2)
 print("adj R²:", r2_adj)
 print("MSE:", sk.metrics.mean_squared_error(y_test, y_pred))
-
-#print(df)
