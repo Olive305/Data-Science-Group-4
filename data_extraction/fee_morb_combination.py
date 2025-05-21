@@ -6,8 +6,14 @@ from thefuzz import process, fuzz
 
 def fuz_combine_fees_morbidity():
     #import data
-    df_fees = pd.read_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
-    df_morbidity = pd.read_excel('../data/Morbidity_Region.xlsx')
+    import os
+
+    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+    fees_path = os.path.join(data_dir, 'Zusatzbeitrag_je Kasse je Quartal.xlsx')
+    morbidity_path = os.path.join(data_dir, 'Morbidity_Region.xlsx')
+
+    df_fees = pd.read_excel(fees_path, engine='openpyxl')
+    df_morbidity = pd.read_excel(morbidity_path, engine='openpyxl')
 
     df_morbidity['Krankenkasse'] = (
         df_morbidity['Krankenkasse']
@@ -56,7 +62,8 @@ def fuz_combine_fees_morbidity():
         how='outer',
         suffixes=('_fees', '_morbidity')
     )
-    df_merged.to_excel("../data/merged_data.xlsx", index=False)
+    merged_path = os.path.join(data_dir, 'merged_data.xlsx')
+    df_merged.to_excel(merged_path, index=False)
     return df_merged
 
 

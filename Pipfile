@@ -10,6 +10,7 @@ openpyxl = "*"
 matplotlib = "*"
 scikit-learn = "*"
 torch = "*"
+thefuzz = "*"
 
 [dev-packages]
 

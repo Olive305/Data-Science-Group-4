@@ -1,6 +1,9 @@
 import pandas as pd
 import sklearn as sk
 from sklearn.preprocessing import StandardScaler
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.fee_morb_combination import fuz_combine_fees_morbidity
 
 #show all of the data with print
@@ -56,7 +59,7 @@ def data_cleanup(df):
 
 def reg_fee_churn():
     #import data
-    df = pd.read_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
+    df = pd.read_excel(os.path.join(os.path.dirname(__file__), '..', 'data', 'Zusatzbeitrag_je Kasse je Quartal.xlsx'))
     df = data_cleanup(df)
     linear_regression(df[['Zusatzbeitrag_diff']], df['Mitglieder_diff_next'])
 
