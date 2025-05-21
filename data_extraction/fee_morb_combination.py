@@ -1,35 +1,68 @@
+from dataclasses import replace
+
 import pandas as pd
-
-df_fees = pd.read_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
-df_morbidity = pd.read_excel('../data/Morbidity_Region.xlsx')
-
+import pandas as pd
 from thefuzz import process, fuzz
 
-# Einmal alle einzigartigen Krankenkassen-Namen aus beiden DataFrames holen
-names_fees = df_fees['Krankenkasse'].unique()
-names_morbidity = df_morbidity['Krankenkasse'].unique()
+def fuz_combine_fees_morbidity():
+    #import data
+    df_fees = pd.read_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
+    df_morbidity = pd.read_excel('../data/Morbidity_Region.xlsx')
 
-# Mapping dict: Für jeden Namen in df_fees den besten Match in df_morbidity suchen
-mapping = {}
-for name in names_fees:
-    best_match, score = process.extractOne(name, names_morbidity, scorer=fuzz.token_sort_ratio)
-    mapping[name] = best_match
+    df_morbidity['Krankenkasse'] = (
+        df_morbidity['Krankenkasse']
+        .replace('BKK der MTU Friedrichshafen', 'BKK MTU', regex=False)
+        .replace('Hanseatische Krankenkasse (HEK)', 'HEK', regex=False)
 
-# Mapping auf df_fees anwenden, neue Spalte mit "normalisiertem" Namen
-df_fees['Krankenkasse_norm'] = df_fees['Krankenkasse'].map(mapping)
+    )
 
-# Jetzt die beiden DataFrames auf der "normalisierten" Krankenkasse und Jahr zusammenführen
-df_merged = pd.merge(
-    df_fees,
-    df_morbidity,
-    left_on=['Krankenkasse_norm', 'Jahr'],
-    right_on=['Krankenkasse', 'Jahr'],
-    how='left',
-    suffixes=('_fees', '_morbidity')
-)
 
-# Optional: Die alte Spalte 'Krankenkasse' aus df_fees entfernen und die normierte Spalte umbenennen
-df_merged.drop(columns=['Krankenkasse_fees'], inplace=True, errors='ignore')
-df_merged.drop(columns=['Krankenkasse_morbidity'], inplace=True, errors='ignore')
-df_merged.rename(columns={'Krankenkasse_norm': 'Krankenkasse'}, inplace=True)
 
+
+    #removing spaces and - writing in lowe case for easier matching
+    df_fees['Krankenkasse'] = (
+        df_fees['Krankenkasse']
+        .str.lower()
+        .str.replace('-', '', regex=True)
+        .str.replace('–', '', regex=True)
+        .str.strip()
+        .str.replace(r'\s+', '', regex=True)
+    )
+
+    df_morbidity['Krankenkasse'] = (
+        df_morbidity['Krankenkasse']
+        .str.lower()
+        .str.replace('-', '', regex=True)
+        .str.replace('–', '', regex=True)
+        .str.strip()
+        .str.replace(r'\s+', '', regex=True)
+    )
+
+    # unique names from fees
+    reference_names = df_fees['Krankenkasse'].unique()
+
+    #fuzzy matching
+    def match_name(name):
+        match, score = process.extractOne(name, reference_names, scorer=fuzz.token_sort_ratio)
+        return match if score >= 75 else name  # nur bei gutem Match ersetzen
+
+    df_morbidity['Krankenkasse'] = df_morbidity['Krankenkasse'].apply(match_name)
+
+    # outer merge -> keeps even the ones that are only availabe in 1 table
+    df_merged = pd.merge(
+        df_fees,
+        df_morbidity,
+        on=['Krankenkasse', 'Jahr'],
+        how='outer',
+        suffixes=('_fees', '_morbidity')
+    )
+    df_merged.to_excel("../data/merged_data.xlsx", index=False)
+    return df_merged
+
+
+fuz_combine_fees_morbidity()
+"""
+s1='metzingerbkk'
+s2='bkkmetzinger'
+print("fuzz score", fuzz.ratio(s1, s2))
+"""
