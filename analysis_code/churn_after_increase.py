@@ -70,4 +70,3 @@ def reg_morb_fee_churn():
 
 
 reg_fee_churn()
-#print(df)
