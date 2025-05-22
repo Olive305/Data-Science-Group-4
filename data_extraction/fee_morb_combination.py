@@ -1,8 +1,13 @@
 from dataclasses import replace
-
 import pandas as pd
 import pandas as pd
 from thefuzz import process, fuzz
+
+#show all of the data with print
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', None)
 
 def fuz_combine_fees_morbidity():
     #import data
@@ -12,6 +17,8 @@ def fuz_combine_fees_morbidity():
     fees_path = os.path.join(data_dir, 'Zusatzbeitrag_je Kasse je Quartal.xlsx')
     morbidity_path = os.path.join(data_dir, 'Morbidity_Region.xlsx')
 
+
+
     df_fees = pd.read_excel(fees_path, engine='openpyxl')
     df_morbidity = pd.read_excel(morbidity_path, engine='openpyxl')
 
@@ -19,11 +26,13 @@ def fuz_combine_fees_morbidity():
         df_morbidity['Krankenkasse']
         .replace('BKK der MTU Friedrichshafen', 'BKK MTU', regex=False)
         .replace('Hanseatische Krankenkasse (HEK)', 'HEK', regex=False)
-
+        .replace('BKK Metzinger','Metzinger BKK', regex=False)
     )
-
-
-
+    #this would be combined with bkk24 from the other list but the BKK itself is not listed there
+    df_morbidity = df_morbidity[df_morbidity['Krankenkasse'] != 'BKK']
+    #for some reason it's listed twice for 2021
+    df_morbidity = df_morbidity[
+        ~((df_morbidity['Krankenkasse'] == 'IKK - Die Innovationskasse') & (df_morbidity['Risikofaktor'] == '-'))]
 
     #removing spaces and - writing in lowe case for easier matching
     df_fees['Krankenkasse'] = (
@@ -50,7 +59,7 @@ def fuz_combine_fees_morbidity():
     #fuzzy matching
     def match_name(name):
         match, score = process.extractOne(name, reference_names, scorer=fuzz.token_sort_ratio)
-        return match if score >= 75 else name  # nur bei gutem Match ersetzen
+        return match if score >= 100 else name  # nur bei gutem Match ersetzen
 
     df_morbidity['Krankenkasse'] = df_morbidity['Krankenkasse'].apply(match_name)
 
@@ -62,8 +71,11 @@ def fuz_combine_fees_morbidity():
         how='outer',
         suffixes=('_fees', '_morbidity')
     )
-    merged_path = os.path.join(data_dir, 'merged_data.xlsx')
-    df_merged.to_excel(merged_path, index=False)
+    #print("länge merged", len(df_merged))
+    #merged_path = os.path.join(data_dir, 'merged_data.xlsx')
+    #df_merged.to_excel(merged_path, index=False)
+
+    #print(df_merged[df_merged.duplicated(subset=['Krankenkasse','Jahr'])])
     return df_merged
 
 
