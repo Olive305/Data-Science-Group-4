@@ -54,6 +54,9 @@ print(correlation_matrix['Churn_Rate_2024'].sort_values(ascending=False))
 
 df_kundenmonitor_all = df_merged
 
+# Fill empty (NaN) values with the mean of each column
+df_kundenmonitor_all = df_kundenmonitor_all.apply(lambda col: col.fillna(col.mean()) if col.dtype in [np.float64, np.float32, np.int64, np.int32] else col)
+
 # Select satisfaction columns (skip 'Krankenkasse' and 'Year')
 satisfaction_columns = df_kundenmonitor_all.columns.difference(['Krankenkasse', 'Year', 'Churn_Rate_2023', 'Churn_Rate_2024'])
 
@@ -79,6 +82,11 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
+
+# Normalize the output (y) to [-1, 1] range for sigmoid output, preserving sign
+y_abs_max = np.abs(y_train).max()
+y_train = y_train / y_abs_max
+y_test = y_test / y_abs_max
 
 # Print the normalized values
 print("Normalized y_train:", y_train.flatten())
@@ -160,5 +168,21 @@ with torch.no_grad():
     print(f"Test Loss (MSE): {test_loss.item():.4f}")
 
 # Convert predictions to numpy for further analysis if needed
-predictions = predictions.numpy()
-print(predictions)
+predictions = predictions.numpy().flatten()
+y_test_flat = y_test.flatten()
+
+import matplotlib.pyplot as plt
+
+# Denormalize predictions and actual values
+predictions_denorm = predictions * y_abs_max
+y_test_denorm = y_test_flat * y_abs_max
+
+plt.figure(figsize=(8, 6))
+plt.scatter(range(len(y_test_denorm)), y_test_denorm, color='blue', label='Actual Churn Rate', marker='o')
+plt.scatter(range(len(predictions_denorm)), predictions_denorm, color='orange', label='Predicted Churn Rate', marker='x')
+plt.xlabel('Sample Index')
+plt.ylabel('Churn Rate')
+plt.title('Predicted and Actual Churn Rates')
+plt.legend()
+plt.grid(True)
+plt.show()
