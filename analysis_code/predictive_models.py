@@ -7,7 +7,7 @@ import random
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_extraction.fee_morb_combination import fuz_combine_fees_morbidity
+from data_extraction.data_merging import fuz_combine_fees_morbidity
 data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
 #show all of the data with print
 pd.set_option('display.max_rows', None)
@@ -146,8 +146,6 @@ def clustering():
         linear_regression(sub[['Zusatzbeitrag_diff', 'Mitglieder', 'Risikofaktor', 'MGxRF']],
                           sub['Mitglieder_diff_next'], name=f"Cluster {g}")
 
-
-
 def random_forest_regression():
     df = reg_morb_fee_churn()
     features = ['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Family_Quote']
@@ -210,6 +208,9 @@ def random_forest_regression():
     for i in random.sample(range(len(X_test)), 5):
         input_features = dict(zip(features, X_test.iloc[i]))
         print(f"y_true = {y_test.iloc[i]:.1f}, y_pred = {y_pred[i]:.1f}, features = {input_features}")
+
+def reg_full():
+
 
 reg_fee_churn()
 random_forest_regression()

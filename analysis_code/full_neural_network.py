@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_extraction.fee_morb_combination import fuz_combine_fees_morbidity
+from data_extraction.data_merging import fuz_combine_fees_morbidity
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler

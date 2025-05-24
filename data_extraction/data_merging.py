@@ -1,5 +1,5 @@
 from dataclasses import replace
-import pandas as pd
+import os
 import pandas as pd
 from thefuzz import process, fuzz
 
@@ -77,9 +77,17 @@ def fuz_combine_fees_morbidity():
 
     #print(df_merged[df_merged.duplicated(subset=['Krankenkasse','Jahr'])])
     return df_merged
+def add_satisfation():
+    location = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx')
+    df_Kundenmonitor2023 = pd.read_excel(location, sheet_name="EE")
+    location = os.path.join(os.path.dirname(__file__), '../data/custom_files/summary_df_2024.xlsx')
+    df_Kundenmonitor2024 = pd.read_excel(location)
+    df_Kundenmonitor2023 = df_Kundenmonitor2023.T
+    print(df_Kundenmonitor2023)
 
 
-fuz_combine_fees_morbidity()
+add_satisfation()
+#fuz_combine_fees_morbidity()
 """
 s1='metzingerbkk'
 s2='bkkmetzinger'
