@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import torch
+from sklearn.metrics import f1_score
 
 # Get the df with the satisfaction values
 file_path = os.path.join(os.path.dirname(__file__), '../data/custom_files/kundenmonitor_churn_merged.xlsx')
@@ -38,6 +39,18 @@ df_merged.to_excel(output_path, index=False)
 # Fill empty values of the df_merged with the mean of the column
 df_merged.fillna(df_merged.mean(numeric_only=True), inplace=True)
 
+# Ensure 'Quartal' is integer for sorting
+df_merged['Quartal'] = df_merged['Quartal'].astype(int)
+
+# Sort by 'Krankenkasse', 'Jahr', 'Quartal'
+df_merged = df_merged.sort_values(['Krankenkasse', 'Jahr', 'Quartal']).reset_index(drop=True)
+
+# Calculate percentual change in members compared to previous quarter for each Krankenkasse
+df_merged['Mitglieder_pct_change_next'] = (
+    df_merged.groupby('Krankenkasse')['Mitglieder']
+    .pct_change(periods=-1) * 100
+)
+
 import torch.nn as nn
 import torch.optim as optim
 
@@ -50,16 +63,9 @@ def has_string(row):
 
 df_merged = df_merged[~df_merged.apply(has_string, axis=1)].reset_index(drop=True)
 
-# Prepare input (satisfaction columns) and output (churn rate for that year)
-X_2023 = df_merged[df_merged['Jahr'] == 2023][satisfaction_columns].values
-y_2023 = df_merged[df_merged['Jahr'] == 2023]['Churn_Rate_2023'].values.reshape(-1, 1)
-X_2024 = df_merged[df_merged['Jahr'] == 2024][satisfaction_columns].values
-y_2024 = df_merged[df_merged['Jahr'] == 2024]['Churn_Rate_2024'].values.reshape(-1, 1)
-
-# Stack both years for combined trainingA
-# Stack both years for combined training
-X = np.vstack([X_2023, X_2024]).astype(float)
-y = np.vstack([y_2023, y_2024]).astype(float)
+# Prepare input (satisfaction columns) and output (Mitglieder percentual change for that year) for all years and quartals
+X = df_merged[satisfaction_columns].values.astype(float)
+y = df_merged['Mitglieder_pct_change_next'].values.reshape(-1, 1).astype(float)
 
 # Drop rows with NaN values in X or y
 valid_indices = ~np.isnan(X).any(axis=1) & ~np.isnan(y).any(axis=1)
@@ -86,22 +92,21 @@ class NeuralNetwork(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(input_size, 16),
             nn.BatchNorm1d(16),
-            nn.Sigmoid(),
+            nn.SiLU(),
             nn.Dropout(0.3),
             nn.Linear(16, 32),
             nn.BatchNorm1d(32),
-            nn.Sigmoid(),
+            nn.SiLU(),
             nn.Dropout(0.3),
             nn.Linear(32, 64),
             nn.BatchNorm1d(64),
-            nn.Sigmoid(),
+            nn.SiLU(),
             nn.Dropout(0.3),
             nn.Linear(64, 32),
             nn.BatchNorm1d(32),
-            nn.Sigmoid(),
+            nn.SiLU(),
             nn.Dropout(0.3),
             nn.Linear(32, 1),
-            nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -113,7 +118,7 @@ criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Train the model
-epochs = 40
+epochs = 20
 batch_size = 32
 for epoch in range(epochs):
     model.train()
@@ -130,14 +135,29 @@ for epoch in range(epochs):
         print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
 
 # Evaluate the model
+def r2_score(preds, targets):
+    ss_res = torch.sum((targets - preds) ** 2)
+    ss_tot = torch.sum((targets - torch.mean(targets)) ** 2)
+    return 1 - ss_res / ss_tot
+
 model.eval()
 with torch.no_grad():
     predictions = model(X_test_tensor)
     test_loss = criterion(predictions, y_test_tensor)
+    r2 = r2_score(predictions, y_test_tensor)
     print(f"Test Loss (MSE): {test_loss.item():.4f}")
+    print(f"R^2 Score: {r2.item():.4f}")
+    # Binarize predictions and targets: positive change as 1, zero or negative as 0
+    preds_bin = (predictions.numpy().flatten() > 0).astype(int)
+    targets_bin = (y_test_tensor.numpy().flatten() > 0).astype(int)
+    f1 = f1_score(targets_bin, preds_bin)
+    print(f"F1 Score: {f1:.4f}")
 
 # Convert predictions to numpy for further analysis if needed
 predictions = predictions.numpy().flatten()
 y_test_flat = y_test.flatten()
+
+#print('\nPredictions:', predictions)
+#print('\nY of train data:\n', y[:5])
 
 
