@@ -3,6 +3,8 @@ import os
 import pandas as pd
 from thefuzz import process, fuzz
 
+from data_extraction.extract_satisfaction import extract_satisfaction
+
 #show all of the data with print
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -77,6 +79,12 @@ def fuz_combine_fees_morbidity():
 
     #print(df_merged[df_merged.duplicated(subset=['Krankenkasse','Jahr'])])
     return df_merged
+
+def name_lookup():
+    df_sat = extract_satisfaction()
+    df = fuz_combine_fees_morbidity()
+
+    print(df_sat)
 def add_satisfation():
     location = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx')
     df_Kundenmonitor2023 = pd.read_excel(location, sheet_name="EE")
@@ -86,7 +94,8 @@ def add_satisfation():
     print(df_Kundenmonitor2023)
 
 
-add_satisfation()
+
+name_lookup()
 #fuz_combine_fees_morbidity()
 """
 s1='metzingerbkk'
