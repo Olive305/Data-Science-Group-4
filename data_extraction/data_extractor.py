@@ -102,10 +102,12 @@ def find_demographics(df_demo):
 def find_demo_23():
     df = load_excel('../data/Kundenmonitor_GKV_2023.xlsx', sheet_name="Band", header = None)
     df = find_demographics(df)
+    df = df.dropna(axis=1, how='all')
     return df
 def find_demo_24():
     df = load_excel('../data/Kundenmonitor_GKV_2024.xlsx', sheet_name="Band", header = None)
     df = find_demographics(df)
+    df = df.dropna(axis=1, how='all')
     return df
 def checker():
     df1=find_demo_23()

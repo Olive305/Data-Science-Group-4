@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from thefuzz import process, fuzz
 
-from data_extraction.data_extractor import find_demo_24
+from data_extraction.data_extractor import find_demo_24, find_demo_23
 from data_extraction.utils import basic_data_cleanup, load_excel, write_excel
 
 #show all of the data with print
@@ -70,22 +70,30 @@ def merge_fm_dem():
     #print(df_fm.head())
     df_mapping = load_excel("../data/matching_tabelle.xlsx")
 
-    df_dem = find_demo_24()
+    df_dem_24 = find_demo_24()
+    df_dem_24= basic_data_cleanup(df_dem_24,'Krankenkasse')
+    df_dem_23 = find_demo_23()
+    df_dem_24.rename(columns={"Krankenkasse": "Name_dem_24"}, inplace=True)
+
+    df_dem_23 = find_demo_23()
+    df_dem_23 = basic_data_cleanup(df_dem_23,'Krankenkasse')
+    df_dem_23.rename(columns={"Krankenkasse": "Name_dem_23"}, inplace=True)
     #renaming for merging
     df_mapping.rename(columns={"Name_fm": "Krankenkasse"}, inplace=True)
 
+    df_fm = df_fm.merge(df_mapping, on="Krankenkasse", how="left")
     #adding the merged names to the df_fm
-    df_fm = df_fm.merge(df_mapping, on='Krankenkasse', how='left')
+    df_fm_24 = df_fm[df_fm['Jahr']==2024].merge(df_dem_24, on="Name_dem_24", how="left")
+    df_fm_23 = df_fm[df_fm['Jahr'] == 2023].merge(df_dem_23, on="Name_dem_23", how="left")
 
-    df_dem.rename(columns={"Krankenkasse": "Name_dem"}, inplace=True)
-    df_dem['Name_dem'] = basic_data_cleanup(df_dem['Name_dem'])
-    df_fm = df_fm.merge(df_dem, on='Name_dem', how='left')
-    #print(df_fm.head())
-    return df_fm
+    df_combined = pd.concat([df_fm_24, df_fm_23], ignore_index=True)
+    df_combined = df_combined.drop(columns=['Name_dem_24', 'Name_dem_23'])
+    write_excel(df_combined, '../data/fm_dem_merged.xlsx')
+    return df_combined
 
 
-
-write_excel(merge_fm_dem(), "../data/full_combi.xlsx")
+merge_fm_dem()
+#write_excel(merge_fm_dem(), "../data/full_combi.xlsx")
 #fuz_combine_fees_morbidity()
 """
 s1='metzingerbkk'

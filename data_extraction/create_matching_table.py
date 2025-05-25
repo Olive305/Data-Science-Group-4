@@ -1,21 +1,21 @@
 import pandas as pd
 from rapidfuzz import process, fuzz
 
-from data_extraction.data_extractor import find_demo_24
+from data_extraction.data_extractor import find_demo_24, find_demo_23
 from data_extraction.data_merging import fuz_combine_fees_morbidity
 from data_extraction.utils import basic_data_cleanup
 
 #loading data
 df_fm = fuz_combine_fees_morbidity()
-def build_matching_24():
 
-    df_dem = find_demo_24()
+def general_matching(df_dem):
 
-    df_dem['Krankenkasse_clean'] =basic_data_cleanup(df_dem['Krankenkasse'])
+
+    df_dem['Krankenkasse_clean'] = basic_data_cleanup(df_dem['Krankenkasse'])
 
     fm_names = df_fm["Krankenkasse"].unique()
 
-    #mapping
+    # mapping
     mapping = []
 
     for name_dem in df_dem["Krankenkasse_clean"].unique():
@@ -33,7 +33,11 @@ def build_matching_24():
             })
 
     df_mapping = pd.DataFrame(mapping)
+    return df_mapping
 
+def build_matching_24():
+    df_dem = find_demo_24()
+    df_mapping=general_matching(df_dem)
     manual_fixes = {
         "hkkkrankenkasse" : "hkk",
         "kkh" : "kaufmännischekrankenkasse(kkh)",
@@ -50,26 +54,64 @@ def build_matching_24():
         axis=1
     )
 
-    gemappte_namen = df_mapping["Name_fm"].unique()
-    alle_namen_fm = df_fm["Krankenkasse"].unique()
+    mapped = df_mapping["Name_fm"].unique()
+    un_names_fm = df_fm["Krankenkasse"].unique()
 
-    nicht_gemappte = [name for name in alle_namen_fm if name not in gemappte_namen]
+    unmapped = [name for name in un_names_fm if name not in mapped]
 
     #for plenty of KKs there are no specific data so it is mapped to "others"
-    sonstige_zeilen = pd.DataFrame({
-        "Name_dem": ["sonstigegkv"] * len(nicht_gemappte),
-        "Name_fm": nicht_gemappte
+    others = pd.DataFrame({
+        "Name_dem": ["sonstigegkv"] * len(unmapped),
+        "Name_fm": unmapped
     })
 
 
-    df_mapping = pd.concat([df_mapping, sonstige_zeilen], ignore_index=True)
+    df_mapping = pd.concat([df_mapping, others], ignore_index=True)
 
     #removes empty ones
     df_mapping = df_mapping.dropna(subset=['Name_fm'])
     df_mapping = df_mapping[df_mapping["Name_fm"].str.strip() != ""]
-
+    df_mapping.rename(columns={"Name_dem": "Name_dem_24"}, inplace=True)
     return df_mapping
-df_mapping = build_matching_24()
 
+def build_matching_23():
+    df_dem = find_demo_23()
+    df_mapping = general_matching(df_dem)
+    df_result = build_matching_24()
+
+    manual_fixes = {
+        "kkh": "kaufmännischekrankenkasse(kkh)",
+        "mobilkrankenkasse": "betriebskrankenkassemobil",
+        "r+vbkk": "r+vbetriebskrankenkasse",
+        "tk": "technikerkrankenkasse(tk)",
+    }
+
+    df_mapping["Name_fm"] = df_mapping.apply(
+        lambda row: manual_fixes[row["Name_dem"]]
+        if row["Name_dem"] in manual_fixes else row["Name_fm"],
+        axis=1
+    )
+
+    mapped = df_mapping["Name_fm"].unique()
+    un_names_fm = df_fm["Krankenkasse"].unique()
+
+    unmapped = [name for name in un_names_fm if name not in mapped]
+
+    # for plenty of KKs there are no specific data so it is mapped to "others"
+    others = pd.DataFrame({
+        "Name_dem": ["sonstigegkv"] * len(unmapped),
+        "Name_fm": unmapped
+    })
+
+    df_mapping = pd.concat([df_mapping, others], ignore_index=True)
+
+    # removes empty ones
+    df_mapping = df_mapping.dropna(subset=['Name_fm'])
+    df_mapping = df_mapping[df_mapping["Name_fm"].str.strip() != ""]
+
+    df_mapping.rename(columns={"Name_dem": "Name_dem_23"}, inplace=True)
+    df_result = df_result.merge(df_mapping, on="Name_fm", how="left")
+    return df_result
+df_mapping = build_matching_23()
 
 df_mapping.to_excel("../data/matching_tabelle.xlsx", index=False)
