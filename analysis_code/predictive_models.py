@@ -6,8 +6,12 @@ import numpy as np
 import random
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from data_extraction.data_merging import fuz_combine_fees_morbidity
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+#from data_extraction.data_merging import reg_morb_fee_churn
+
 data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
 #show all of the data with print
 pd.set_option('display.max_rows', None)
@@ -127,9 +131,12 @@ def reg_morb_fee_churn():
     df['MGxRF']    = ((df['Mitglieder'] * df['Risikofaktor'])/4) #interactive term
     df['Family_Quote'] = df['Versicherte']/df['Mitglieder']
     #linear regression
-    linear_regression(df[['ZB_diff', 'Risikofaktor','Mitglieder','MGxRF','Versicherte']], df['Mitglieder_diff_next'], "morb_fee_churn:")
+    df.to_excel("../data/prepared_regression_fm.xlsx", index=False)
     return(df)
 
+def regression_fm():
+    df = reg_morb_fee_churn()
+    linear_regression(df[['ZB_diff', 'Risikofaktor','Mitglieder','MGxRF','Versicherte']], df['Mitglieder_diff_next'], "morb_fee_churn:")
 def clustering():
     df= reg_morb_fee_churn()
     cluster_feats = df[['Mitglieder', 'Risikofaktor', 'Zusatzbeitrag_diff']]
@@ -209,9 +216,10 @@ def random_forest_regression():
         input_features = dict(zip(features, X_test.iloc[i]))
         print(f"y_true = {y_test.iloc[i]:.1f}, y_pred = {y_pred[i]:.1f}, features = {input_features}")
 
-def reg_full():
 
-
-reg_fee_churn()
-random_forest_regression()
+#regression_fm()
+#def reg_full():
+#reg_fee_churn()
+#random_forest_regression()
 #reg_morb_fee_churn()
+

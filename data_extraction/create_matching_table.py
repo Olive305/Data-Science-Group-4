@@ -3,27 +3,13 @@ from rapidfuzz import process, fuzz
 
 from data_extraction.data_extractor import find_demographics
 from data_extraction.data_merging import fuz_combine_fees_morbidity
+from data_extraction.utils import data_cleanup
 
 #loading data
 df_fm = fuz_combine_fees_morbidity()
 df_dem = find_demographics()
 
-def data_cleaner(df):
-    """
-    Cleans all of the data from one row of the df
-    :param df:
-    :return:
-    """
-    df= (
-        df_dem
-        .str.lower()
-        .str.replace('-', '', regex=True)
-        .str.replace('–', '', regex=True)
-        .str.strip()
-        .str.replace(r'\s+', '', regex=True)
-    )
-
-data_cleaner(df_dem['Krankenkasse_clean'])
+df_dem['Krankenkasse_clean'] =data_cleanup(df_dem['Krankenkasse'])
 
 fm_names = df_fm["Krankenkasse"].unique()
 
@@ -76,5 +62,8 @@ sonstige_zeilen = pd.DataFrame({
 
 df_mapping = pd.concat([df_mapping, sonstige_zeilen], ignore_index=True)
 df_mapping = df_mapping.dropna(subset=['Name_fm'])
+
+df_mapping = df_mapping.dropna(subset=["Name_fm"])
+
 
 df_mapping.to_excel("../data/matching_tabelle.xlsx", index=False)
