@@ -2,10 +2,11 @@ import os
 import pandas as pd
 
 
-def load_excel(relative_path: str, sheet_name: str = None, **kwargs) -> pd.DataFrame:
+def load_excel(relative_path: str, sheet_name: str = None, header=0,**kwargs) -> pd.DataFrame:
     """
     loads an excel file into a pandas dataframe
 
+    :param header:
     :param relative_path: path to the file
     :param sheet_name: (optional) sheet name
     :param kwargs: additional arguments
@@ -13,9 +14,9 @@ def load_excel(relative_path: str, sheet_name: str = None, **kwargs) -> pd.DataF
     """
     abs_path = os.path.join(os.path.dirname(__file__), relative_path)
     if sheet_name:
-        return pd.read_excel(abs_path, sheet_name=sheet_name)
+        return pd.read_excel(abs_path, sheet_name=sheet_name, header=header)
     else:
-        return pd.read_excel(abs_path)
+        return pd.read_excel(abs_path, header=header)
 
 def write_excel(df: pd.DataFrame, relative_path: str, **kwargs) -> None:
     """

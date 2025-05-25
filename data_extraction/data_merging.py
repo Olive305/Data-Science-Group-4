@@ -2,8 +2,8 @@ import os
 import pandas as pd
 from thefuzz import process, fuzz
 
-from data_extraction.data_extractor import find_demographics
-from data_extraction.utils import basic_data_cleanup, load_excel
+from data_extraction.data_extractor import find_demo_24
+from data_extraction.utils import basic_data_cleanup, load_excel, write_excel
 
 #show all of the data with print
 pd.set_option('display.max_rows', None)
@@ -67,9 +67,10 @@ def merge_fm_dem():
     :return:
     """
     df_fm = load_excel("../data/prepared_regression_fm.xlsx")
-    print(df_fm.head())
+    #print(df_fm.head())
     df_mapping = load_excel("../data/matching_tabelle.xlsx")
-    df_dem = find_demographics()
+
+    df_dem = find_demo_24()
     #renaming for merging
     df_mapping.rename(columns={"Name_fm": "Krankenkasse"}, inplace=True)
 
@@ -84,7 +85,7 @@ def merge_fm_dem():
 
 
 
-
+write_excel(merge_fm_dem(), "../data/full_combi.xlsx")
 #fuz_combine_fees_morbidity()
 """
 s1='metzingerbkk'
