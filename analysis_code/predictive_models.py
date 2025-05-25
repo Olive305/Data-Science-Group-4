@@ -8,12 +8,8 @@ import sys
 import os
 
 from data_extraction.data_merging import fuz_combine_fees_morbidity
+from data_extraction.utils import load_excel, write_excel
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-#from data_extraction.data_merging import reg_morb_fee_churn
-
-data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-#show all of the data with print
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
@@ -98,7 +94,7 @@ def data_cleanup(df):
 
 def reg_fee_churn():
     #import data
-    df = pd.read_excel(os.path.join(os.path.dirname(__file__), '..', 'data', 'Zusatzbeitrag_je Kasse je Quartal.xlsx'))
+    df = load_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
     df = data_cleanup(df)
     linear_regression(df[['ZB_diff']], df['Mitglieder_diff_next'],"fee churn:")
 
@@ -131,11 +127,12 @@ def reg_morb_fee_churn():
     df['MGxRF']    = ((df['Mitglieder'] * df['Risikofaktor'])/4) #interactive term
     df['Family_Quote'] = df['Versicherte']/df['Mitglieder']
     #linear regression
-    df.to_excel("../data/prepared_regression_fm.xlsx", index=False)
+    write_excel(df,"../data/prepared_regression_fm.xlsx", index=False)
     return(df)
 
 def regression_fm():
     df = reg_morb_fee_churn()
+    print(df)
     linear_regression(df[['ZB_diff', 'Risikofaktor','Mitglieder','MGxRF','Versicherte']], df['Mitglieder_diff_next'], "morb_fee_churn:")
 def clustering():
     df= reg_morb_fee_churn()

@@ -3,7 +3,7 @@ import pandas as pd
 from thefuzz import process, fuzz
 
 from data_extraction.data_extractor import find_demographics
-from data_extraction.utils import data_cleanup
+from data_extraction.utils import basic_data_cleanup, load_excel
 
 #show all of the data with print
 pd.set_option('display.max_rows', None)
@@ -13,16 +13,8 @@ pd.set_option('display.max_colwidth', None)
 
 def fuz_combine_fees_morbidity():
     #import data
-    import os
-
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-    fees_path = os.path.join(data_dir, 'Zusatzbeitrag_je Kasse je Quartal.xlsx')
-    morbidity_path = os.path.join(data_dir, 'Morbidity_Region.xlsx')
-
-
-
-    df_fees = pd.read_excel(fees_path, engine='openpyxl')
-    df_morbidity = pd.read_excel(morbidity_path, engine='openpyxl')
+    df_fees = load_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
+    df_morbidity = load_excel('../data/Morbidity_Region.xlsx')
 
     df_morbidity['Krankenkasse'] = (
         df_morbidity['Krankenkasse']
@@ -37,8 +29,11 @@ def fuz_combine_fees_morbidity():
         ~((df_morbidity['Krankenkasse'] == 'IKK - Die Innovationskasse') & (df_morbidity['Risikofaktor'] == '-'))]
 
     #removing spaces and - writing in lowe case for easier matching
-    df_fees['Krankenkasse'] = data_cleanup(df_morbidity['Krankenkasse'])
-    df_morbidity['Krankenkasse'] = data_cleanup(df_morbidity['Krankenkasse'])
+    df_fees['Krankenkasse'] = basic_data_cleanup(df_fees['Krankenkasse'])
+    df_morbidity['Krankenkasse'] = basic_data_cleanup(df_morbidity['Krankenkasse'])
+
+    #print(df_morbidity)
+    #print(df_fees)
 
     # unique names from fees
     reference_names = df_fees['Krankenkasse'].unique()
@@ -67,10 +62,13 @@ def fuz_combine_fees_morbidity():
 
 
 def merge_fm_dem():
-    location = os.path.join(os.path.dirname(__file__), "../data/prepared_regression_fm.xlsx")
-    df_fm = pd.read_excel(location)
-    location = os.path.join(os.path.dirname(__file__), "../data/matching_tabelle.xlsx")
-    df_mapping = pd.read_excel(location)
+    """
+    only works after running reg_morb_fee_churn()
+    :return:
+    """
+    df_fm = load_excel("../data/prepared_regression_fm.xlsx")
+    print(df_fm.head())
+    df_mapping = load_excel("../data/matching_tabelle.xlsx")
     df_dem = find_demographics()
     #renaming for merging
     df_mapping.rename(columns={"Name_fm": "Krankenkasse"}, inplace=True)
@@ -79,13 +77,13 @@ def merge_fm_dem():
     df_fm = df_fm.merge(df_mapping, on='Krankenkasse', how='left')
 
     df_dem.rename(columns={"Krankenkasse": "Name_dem"}, inplace=True)
-    df_dem['Name_dem'] = data_cleanup(df_dem['Name_dem'])
+    df_dem['Name_dem'] = basic_data_cleanup(df_dem['Name_dem'])
     df_fm = df_fm.merge(df_dem, on='Name_dem', how='left')
-    print(df_fm.head())
+    #print(df_fm.head())
+    return df_fm
 
 
 
-merge_fm_dem()
 
 #fuz_combine_fees_morbidity()
 """

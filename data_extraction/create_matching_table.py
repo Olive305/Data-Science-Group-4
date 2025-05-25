@@ -3,13 +3,13 @@ from rapidfuzz import process, fuzz
 
 from data_extraction.data_extractor import find_demographics
 from data_extraction.data_merging import fuz_combine_fees_morbidity
-from data_extraction.utils import data_cleanup
+from data_extraction.utils import basic_data_cleanup
 
 #loading data
 df_fm = fuz_combine_fees_morbidity()
 df_dem = find_demographics()
 
-df_dem['Krankenkasse_clean'] =data_cleanup(df_dem['Krankenkasse'])
+df_dem['Krankenkasse_clean'] =basic_data_cleanup(df_dem['Krankenkasse'])
 
 fm_names = df_fm["Krankenkasse"].unique()
 
