@@ -54,26 +54,33 @@ df_merged['Mitglieder_pct_change_next'] = (
 import torch.nn as nn
 import torch.optim as optim
 
+# Calculate the fee increase based on the 'Zusatzbeitrag' column
+# Assuming 'Zusatzbeitrag' is the additional fee for each row, calculate its percentual change to estimate fee increase
+df_merged['Zusatzbeitrag_fee_increase_pct'] = (
+    df_merged.groupby('Krankenkasse')['Zusatzbeitrag']
+    .pct_change(periods=-1) * 100
+)
+
+# Remove columns from the dataframe with string values
+df_merged = df_merged.select_dtypes(exclude=['object'])
+
 # Select satisfaction columns (skip 'Krankenkasse' and 'Jahr')
 satisfaction_columns = df_merged.columns.difference(['Krankenkasse', 'Jahr', 'Churn_Rate_2023', 'Churn_Rate_2024', 'Quartal', 'Regionalität', 'Regionale Verteilung'])
-
-# Remove rows with string values in any satisfaction column
-def has_string(row):
-    return any(isinstance(row[col], str) for col in satisfaction_columns)
-
-df_merged = df_merged[~df_merged.apply(has_string, axis=1)].reset_index(drop=True)
 
 # Prepare input (satisfaction columns) and output (Mitglieder percentual change for that year) for all years and quartals
 X = df_merged[satisfaction_columns].values.astype(float)
 y = df_merged['Mitglieder_pct_change_next'].values.reshape(-1, 1).astype(float)
 
 # Drop rows with NaN values in X or y
-valid_indices = ~np.isnan(X).any(axis=1) & ~np.isnan(y).any(axis=1)
+# Drop rows with NaN or infinite values in X or y
+valid_indices = (
+    ~np.isnan(X).any(axis=1) & ~np.isnan(y).any(axis=1) &
+    ~np.isinf(X).any(axis=1) & ~np.isinf(y).any(axis=1)
+)
 X = X[valid_indices]
 y = y[valid_indices]
 # Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
 # Scale inputs
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
@@ -152,6 +159,7 @@ with torch.no_grad():
     targets_bin = (y_test_tensor.numpy().flatten() > 0).astype(int)
     f1 = f1_score(targets_bin, preds_bin)
     print(f"F1 Score: {f1:.4f}")
+
 
 # Convert predictions to numpy for further analysis if needed
 predictions = predictions.numpy().flatten()

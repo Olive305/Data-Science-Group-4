@@ -11,6 +11,7 @@ matplotlib = "*"
 scikit-learn = "*"
 torch = "*"
 thefuzz = "*"
+shap = "*"
 
 [dev-packages]
 
