@@ -4,8 +4,6 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import numpy as np
 import random
-import sys
-import os
 
 from data_extraction.data_merging import fuz_combine_fees_morbidity
 from data_extraction.utils import load_excel, write_excel
@@ -108,7 +106,12 @@ def reg_morb_fee_churn():
     calls upon linear_regression(X, y, name, seeds=range(100))
     returns the df for further models
     """
-    df= fuz_combine_fees_morbidity()
+    try:
+        df= load_excel("../data/morb_fee_merged.xlsx")
+    except FileNotFoundError:
+        fuz_combine_fees_morbidity()
+        df = load_excel("../data/morb_fee_merged.xlsx")
+
     df = df.dropna(subset=['Zusatzbeitrag'])
     df = data_cleanup(df)
 

@@ -2,23 +2,23 @@ import pandas as pd
 from rapidfuzz import process, fuzz
 
 from data_extraction.data_extractor import find_demo_24, find_demo_23
-from data_extraction.data_merging import fuz_combine_fees_morbidity
-from data_extraction.utils import basic_data_cleanup
+
+from data_extraction.utils import basic_data_cleanup, write_excel, load_excel
 
 #loading data
-df_fm = fuz_combine_fees_morbidity()
+df_fm = load_excel("../data/morb_fee_merged.xlsx")
 
 def general_matching(df_dem):
 
 
-    df_dem['Krankenkasse_clean'] = basic_data_cleanup(df_dem['Krankenkasse'])
+    df_dem = basic_data_cleanup(df_dem, 'Krankenkasse')
 
     fm_names = df_fm["Krankenkasse"].unique()
 
     # mapping
     mapping = []
 
-    for name_dem in df_dem["Krankenkasse_clean"].unique():
+    for name_dem in df_dem["Krankenkasse"].unique():
         match, score, _ = process.extractOne(name_dem, fm_names, scorer=fuzz.token_sort_ratio)
         if score >= 75:
             mapping.append({
@@ -111,7 +111,7 @@ def build_matching_23():
 
     df_mapping.rename(columns={"Name_dem": "Name_dem_23"}, inplace=True)
     df_result = df_result.merge(df_mapping, on="Name_fm", how="left")
-    return df_result
+    write_excel(df_result, "../data/matching_tabelle.xlsx")
 df_mapping = build_matching_23()
 
-df_mapping.to_excel("../data/matching_tabelle.xlsx", index=False)
+
