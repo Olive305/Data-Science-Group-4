@@ -1,5 +1,8 @@
 import pandas as pd
 import os
+
+from data_extraction.utils import load_excel
+
 #show all of the data with print
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -78,10 +81,8 @@ def clean_demo(df):
     df.columns = cols
     return df
 
-def find_demographics():
+def find_demographics(df_demo):
     search = "Bei welcher gesetzlichen Krankenkasse sind Sie krankenversichert?"
-    location = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2024.xlsx')
-    df_demo = pd.read_excel(location, sheet_name="Band", header=None)
 
     start_row=0
     df_result,end=searcher(search,df_demo)
@@ -98,6 +99,27 @@ def find_demographics():
         start_row = end + 1
 
     return df_result
+def find_demo_23():
+    df = load_excel('../data/Kundenmonitor_GKV_2023.xlsx', sheet_name="Band", header = None)
+    df = find_demographics(df)
+    df = df.dropna(axis=1, how='all')
+    return df
+def find_demo_24():
+    df = load_excel('../data/Kundenmonitor_GKV_2024.xlsx', sheet_name="Band", header = None)
+    df = find_demographics(df)
+    df = df.dropna(axis=1, how='all')
+    return df
+def checker():
+    df1=find_demo_23()
+    df2= find_demo_24()
+    print(df1["Krankenkasse"].unique())
+    print(df2["Krankenkasse"].unique())
+    list1 = df1["Krankenkasse"].tolist()
+
+    list2 = df2["Krankenkasse"].tolist()
 
 
-#print(find_demographics())
+    # XOR mit Sets
+    xor = set(list1) ^ set(list2)
+    print(xor)
+#checker()

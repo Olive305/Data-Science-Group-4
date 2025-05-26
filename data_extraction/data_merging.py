@@ -1,9 +1,9 @@
-from dataclasses import replace
 import os
 import pandas as pd
 from thefuzz import process, fuzz
 
-from data_extraction.data_extractor import extract_satisfaction
+from data_extraction.data_extractor import find_demo_24, find_demo_23
+from data_extraction.utils import basic_data_cleanup, load_excel, write_excel
 
 #show all of the data with print
 pd.set_option('display.max_rows', None)
@@ -13,16 +13,8 @@ pd.set_option('display.max_colwidth', None)
 
 def fuz_combine_fees_morbidity():
     #import data
-    import os
-
-    data_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-    fees_path = os.path.join(data_dir, 'Zusatzbeitrag_je Kasse je Quartal.xlsx')
-    morbidity_path = os.path.join(data_dir, 'Morbidity_Region.xlsx')
-
-
-
-    df_fees = pd.read_excel(fees_path, engine='openpyxl')
-    df_morbidity = pd.read_excel(morbidity_path, engine='openpyxl')
+    df_fees = load_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
+    df_morbidity = load_excel('../data/Morbidity_Region.xlsx')
 
     df_morbidity['Krankenkasse'] = (
         df_morbidity['Krankenkasse']
@@ -37,23 +29,11 @@ def fuz_combine_fees_morbidity():
         ~((df_morbidity['Krankenkasse'] == 'IKK - Die Innovationskasse') & (df_morbidity['Risikofaktor'] == '-'))]
 
     #removing spaces and - writing in lowe case for easier matching
-    df_fees['Krankenkasse'] = (
-        df_fees['Krankenkasse']
-        .str.lower()
-        .str.replace('-', '', regex=True)
-        .str.replace('–', '', regex=True)
-        .str.strip()
-        .str.replace(r'\s+', '', regex=True)
-    )
+    df_fees['Krankenkasse'] = basic_data_cleanup(df_fees['Krankenkasse'])
+    df_morbidity['Krankenkasse'] = basic_data_cleanup(df_morbidity['Krankenkasse'])
 
-    df_morbidity['Krankenkasse'] = (
-        df_morbidity['Krankenkasse']
-        .str.lower()
-        .str.replace('-', '', regex=True)
-        .str.replace('–', '', regex=True)
-        .str.strip()
-        .str.replace(r'\s+', '', regex=True)
-    )
+    #print(df_morbidity)
+    #print(df_fees)
 
     # unique names from fees
     reference_names = df_fees['Krankenkasse'].unique()
@@ -80,6 +60,40 @@ def fuz_combine_fees_morbidity():
     #print(df_merged[df_merged.duplicated(subset=['Krankenkasse','Jahr'])])
     return df_merged
 
+
+def merge_fm_dem():
+    """
+    only works after running reg_morb_fee_churn()
+    :return:
+    """
+    df_fm = load_excel("../data/prepared_regression_fm.xlsx")
+    #print(df_fm.head())
+    df_mapping = load_excel("../data/matching_tabelle.xlsx")
+
+    df_dem_24 = find_demo_24()
+    df_dem_24= basic_data_cleanup(df_dem_24,'Krankenkasse')
+    df_dem_23 = find_demo_23()
+    df_dem_24.rename(columns={"Krankenkasse": "Name_dem_24"}, inplace=True)
+
+    df_dem_23 = find_demo_23()
+    df_dem_23 = basic_data_cleanup(df_dem_23,'Krankenkasse')
+    df_dem_23.rename(columns={"Krankenkasse": "Name_dem_23"}, inplace=True)
+    #renaming for merging
+    df_mapping.rename(columns={"Name_fm": "Krankenkasse"}, inplace=True)
+
+    df_fm = df_fm.merge(df_mapping, on="Krankenkasse", how="left")
+    #adding the merged names to the df_fm
+    df_fm_24 = df_fm[df_fm['Jahr']==2024].merge(df_dem_24, on="Name_dem_24", how="left")
+    df_fm_23 = df_fm[df_fm['Jahr'] == 2023].merge(df_dem_23, on="Name_dem_23", how="left")
+
+    df_combined = pd.concat([df_fm_24, df_fm_23], ignore_index=True)
+    df_combined = df_combined.drop(columns=['Name_dem_24', 'Name_dem_23'])
+    write_excel(df_combined, '../data/fm_dem_merged.xlsx')
+    return df_combined
+
+
+merge_fm_dem()
+#write_excel(merge_fm_dem(), "../data/full_combi.xlsx")
 #fuz_combine_fees_morbidity()
 """
 s1='metzingerbkk'
