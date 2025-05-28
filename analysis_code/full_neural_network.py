@@ -1,71 +1,30 @@
 import os
 import pandas as pd
 import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from data_extraction.data_merging import fuz_combine_fees_morbidity
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import torch
 from sklearn.metrics import f1_score
-
-# Get the df with the satisfaction values
-file_path = os.path.join(os.path.dirname(__file__), '../data/custom_files/kundenmonitor_churn_merged.xlsx')
-df_sat = pd.read_excel(file_path)
-
-# Switch the krankenkasse names to lowercase and remove spaces
-df_sat['Krankenkasse'] = df_sat['Krankenkasse'].str.lower().str.replace(' ', '')
-
-# Get the df with the morbidity rate and the churn rate
-df_morb = fuz_combine_fees_morbidity()
-
-# Sort both dataframes by 'Krankenkasse' and 'Jahr' for merge_asof
-df_sat = df_sat.sort_values(['Jahr'])
-df_morb = df_morb.sort_values(['Jahr'])
-
-# Merge the dataframes using the year and the Krankenkasse values
-# Since there are only satisfaciton values for 2023 and 2024, we use the nearest of the two years, when filling the table
-df_merged = pd.merge_asof(
-    df_morb,
-    df_sat,
-    on='Jahr',
-    by='Krankenkasse',
-    direction='nearest'
-)
-
-output_path = os.path.join(os.path.dirname(__file__), '../data/custom_files/full_data.xlsx')
-df_merged.to_excel(output_path, index=False)
-
-# Fill empty values of the df_merged with the mean of the column
-df_merged.fillna(df_merged.mean(numeric_only=True), inplace=True)
-
-# Ensure 'Quartal' is integer for sorting
-df_merged['Quartal'] = df_merged['Quartal'].astype(int)
-
-# Sort by 'Krankenkasse', 'Jahr', 'Quartal'
-df_merged = df_merged.sort_values(['Krankenkasse', 'Jahr', 'Quartal']).reset_index(drop=True)
-
-# Calculate percentual change in members compared to previous quarter for each Krankenkasse
-df_merged['Mitglieder_pct_change_next'] = (
-    df_merged.groupby('Krankenkasse')['Mitglieder']
-    .pct_change(periods=-1) * 100
-)
-
 import torch.nn as nn
 import torch.optim as optim
 
-# Calculate the fee increase based on the 'Zusatzbeitrag' column
-# Assuming 'Zusatzbeitrag' is the additional fee for each row, calculate its percentual change to estimate fee increase
-df_merged['Zusatzbeitrag_fee_increase_pct'] = (
-    df_merged.groupby('Krankenkasse')['Zusatzbeitrag']
-    .pct_change(periods=-1) * 100
-)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from data_extraction.data_merging_with_satisfaction import merge_churn_with_satisfaction
+from analysis_code.predictive_models import reg_morb_fee_churn
 
-# Remove columns from the dataframe with string values
-df_merged = df_merged.select_dtypes(exclude=['object'])
+reg_morb_fee_churn()
+
+df_merged = merge_churn_with_satisfaction()
+
+# Identify all non-numeric columns for one-hot encoding
+categorical_cols = df_merged.select_dtypes(include=['object', 'category']).columns
+
+# One-hot encode categorical columns using pd.get_dummies
+df_merged = pd.get_dummies(df_merged, columns=categorical_cols, drop_first=True)
 
 # Select satisfaction columns (skip 'Krankenkasse' and 'Jahr')
-satisfaction_columns = df_merged.columns.difference(['Krankenkasse', 'Jahr', 'Churn_Rate_2023', 'Churn_Rate_2024', 'Quartal', 'Regionalität', 'Regionale Verteilung'])
+satisfaction_columns = df_merged.columns.difference(['Mitglieder_pct_change_next'])
 
 # Prepare input (satisfaction columns) and output (Mitglieder percentual change for that year) for all years and quartals
 X = df_merged[satisfaction_columns].values.astype(float)
