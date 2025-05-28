@@ -1,5 +1,4 @@
 import pandas as pd
-import os
 
 from data_extraction.utils import load_excel
 
@@ -34,8 +33,8 @@ def extract_satisfaction():
     return the df with the satisfaction
     """
     search = "Ausgewiesene Werte sind Mittelwerte: Alle Fragen auf einer fünfstufigen Skala von"
-    location = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2024.xlsx')
-    df = pd.read_excel(location, sheet_name="Band", header=None)
+
+    df=load_excel('../data/Kundenmonitor_GKV_2024.xlsx', sheet_name="Band", header=None)
     df_result= pd.DataFrame()
     start_row=0
     while True:
