@@ -4,6 +4,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import numpy as np
 import random
+import sys
+import os
 
 # Add the parent directory to sys.path so data_extraction can be imported
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))

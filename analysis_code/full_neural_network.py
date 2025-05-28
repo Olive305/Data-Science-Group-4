@@ -24,10 +24,15 @@ categorical_cols = df_merged.select_dtypes(include=['object', 'category']).colum
 df_merged = pd.get_dummies(df_merged, columns=categorical_cols, drop_first=True)
 
 # Select satisfaction columns (skip 'Krankenkasse' and 'Jahr')
-satisfaction_columns = df_merged.columns.difference(['Mitglieder_pct_change_next'])
+satisfaction_columns = df_merged.columns.difference(['Mitglieder_pct_change_next', 'Mitglieder_diff_next'])
 
 # Prepare input (satisfaction columns) and output (Mitglieder percentual change for that year) for all years and quartals
-X = df_merged[satisfaction_columns].values.astype(float)
+# Convert all satisfaction columns to numeric, coercing errors to NaN, then drop rows with NaN
+X_df = df_merged[satisfaction_columns].apply(pd.to_numeric, errors='coerce')
+X_df = X_df.dropna()
+X = X_df.values.astype(float)
+# Align y with the filtered X
+y = df_merged.loc[X_df.index, 'Mitglieder_pct_change_next'].values.reshape(-1, 1).astype(float)
 y = df_merged['Mitglieder_pct_change_next'].values.reshape(-1, 1).astype(float)
 
 # Drop rows with NaN values in X or y

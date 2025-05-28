@@ -13,7 +13,11 @@ def merge_churn_with_satisfaction():
     df_Kundenmonitor2024 = pd.read_excel(location)
 
     # import other data
-    df_churn = fuz_combine_fees_morbidity()
+    fuz_combine_fees_morbidity()
+
+    # Import the prepared_regression_fm.xlsx file
+    morb_fee_path = os.path.join(os.path.dirname(__file__), '../data/prepared_regression_fm.xlsx')
+    df_churn = pd.read_excel(morb_fee_path)
 
     # Fill empty Quartal values with 1
     df_churn['Quartal'] = df_churn['Quartal'].fillna(1)
@@ -80,10 +84,7 @@ def merge_churn_with_satisfaction():
     # Sort by 'Krankenkasse', 'Jahr', 'Quartal'
     df_merged = df_merged.sort_values(['Krankenkasse', 'Jahr', 'Quartal']).reset_index(drop=True)
 
-    # Calculate percentual change in members compared to previous quarter for each Krankenkasse
-    df_merged['Mitglieder_pct_change_next'] = (
-        df_merged.groupby('Krankenkasse')['Mitglieder']
-        .pct_change(periods=-1) * 100
-    )
-
+    # Calculate percentual change in members compared to next quarter for each Krankenkasse
+    df_merged['Mitglieder_pct_change_next'] = df_merged['Mitglieder_diff_next'] / df_merged['Mitglieder']
+    
     return df_merged
