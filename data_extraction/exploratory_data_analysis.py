@@ -3,7 +3,9 @@ import pandas as pd
 from data_extraction.utils import load_excel
 
 
-def full_eda(df):
+def full_eda():
+    df = load_excel('../data/fm_dem_merged.xlsx')
+    df = df.drop(df.columns[0], axis=1)
     print("Shape:", df.shape)
     print("Info:")
     print(df.info())
@@ -23,6 +25,3 @@ def full_eda(df):
     plt.title("Correlation Heatmap")
     plt.show()
 
-df= load_excel('../data/fm_dem_merged.xlsx')
-df = df.drop(df.columns[0], axis=1)
-full_eda(df)
