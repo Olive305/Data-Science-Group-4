@@ -45,9 +45,25 @@ def kundenmonitor_extraction(year):
     df_t.rename(columns={df_t.columns[0]: "Krankenkasse"}, inplace=True)
     df_t = basic_data_cleanup(df_t, 'Krankenkasse')
 
+    # Remove columns where any value is not in the range 1 to 5 (inclusive)
+    cols_to_keep = [
+        col for col in df_t.columns
+        if df_t[col].dropna().apply(lambda x: 1 <= x <= 5 if isinstance(x, (int, float)) else True).all()
+    ]
+    df_t = df_t[cols_to_keep]
+
     return df_t
 
 def merge_churn_with_satisfaction():
+
+    try:
+        full_data_path = os.path.join(os.path.dirname(__file__), '../data/full_data.xlsx')
+        if os.path.exists(full_data_path):
+            return pd.read_excel(full_data_path)
+    except Exception as e:
+        print(f"Warning: Could not read full_data.xlsx due to: {e}")
+
+    # If file does not exist, continue as normal and save at the end
 
     # merge it with the matching table
     matching_path = os.path.join(os.path.dirname(__file__), '../data/matching_tabelle.xlsx')
@@ -128,23 +144,14 @@ def merge_churn_with_satisfaction():
     df_merged['Mitglieder_pct_change_next'] = df_merged['Mitglieder_diff_next'] / df_merged['Mitglieder']
 
     df_merged = df_merged.dropna(axis=1, how='all')
-    
+
+    # Remove columns with "unnamed" in the name (case-insensitive)
+    df_merged = df_merged[[col for col in df_merged.columns if "unnamed" not in col.lower()]]
+
+    df_merged.to_excel(os.path.join(os.path.dirname(__file__), '../data/full_data.xlsx'), index=False)
+
     return df_merged
 
 
 if __name__ == "__main__":
-    # Example: extract for 2023
-    # Store the result of kundenmonitor_extraction for both years
-    #df_kundenmonitor_2023 = kundenmonitor_extraction(2023)
-    #df_kundenmonitor_2024 = kundenmonitor_extraction(2024)
-
-    # Store the result of merge_churn_with_satisfaction
-    df_merged = merge_churn_with_satisfaction()
-
-    # Write results to Excel files for testing
-    output_dir = os.path.join(os.path.dirname(__file__), '../data/test_outputs')
-    os.makedirs(output_dir, exist_ok=True)
-
-    #df_kundenmonitor_2023.to_excel(os.path.join(output_dir, 'kundenmonitor_2023_test.xlsx'), index=False)
-    #df_kundenmonitor_2024.to_excel(os.path.join(output_dir, 'kundenmonitor_2024_test.xlsx'), index=False)
-    df_merged.to_excel(os.path.join(output_dir, 'merged_churn_with_satisfaction_test.xlsx'), index=False)
+    merge_churn_with_satisfaction()
