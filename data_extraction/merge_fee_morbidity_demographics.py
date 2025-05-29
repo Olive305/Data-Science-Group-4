@@ -34,10 +34,14 @@ def merge_fm_dem():
 
     df_fm = df_fm.merge(df_mapping, on="Krankenkasse", how="left")
     #adding the merged names to the df_fm
-    df_fm_24 = df_fm[df_fm['Jahr']==2024].merge(df_dem_24, on="Name_dem_24", how="left")
-    df_fm_23 = df_fm[df_fm['Jahr'] == 2023].merge(df_dem_23, on="Name_dem_23", how="left")
+    #print(df_dem_24.head())
 
+    df_fm_24 = df_fm[df_fm['Jahr']==2024].merge(df_dem_24, on="Name_dem_24", how="left")
+    #print(df_fm_24.head())
+    df_fm_23 = df_fm[df_fm['Jahr'] == 2023].merge(df_dem_23, on="Name_dem_23", how="left")
+    
     df_combined = pd.concat([df_fm_24, df_fm_23], ignore_index=True)
+
     df_combined = df_combined.drop(columns=['Name_dem_24', 'Name_dem_23'])
     write_excel(df_combined, '../data/fm_dem_merged.xlsx')
     return df_combined

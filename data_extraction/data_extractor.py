@@ -86,7 +86,7 @@ def find_demographics(df_demo):
     start_row=0
     df_result,end=searcher(search,df_demo)
     df_result = clean_demo(df_result)
-
+    start_row = end + 1
     while True:
         df, end = searcher(search,df_demo,start_row)
         if df.empty:
@@ -121,4 +121,3 @@ def checker():
     # XOR mit Sets
     xor = set(list1) ^ set(list2)
     print(xor)
-#checker()
