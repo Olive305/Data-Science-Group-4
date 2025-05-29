@@ -6,7 +6,7 @@ import numpy as np
 import random
 
 # Add the parent directory to sys.path so data_extraction can be imported
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_extraction.data_merging import fuz_combine_fees_morbidity
 from data_extraction.utils import load_excel, write_excel
