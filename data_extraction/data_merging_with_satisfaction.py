@@ -2,15 +2,76 @@ import os
 import sys
 import pandas as pd
 
-def merge_churn_with_satisfaction():
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-    from data_extraction.data_merging import fuz_combine_fees_morbidity
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from data_extraction.data_merging import fuz_combine_fees_morbidity
+from data_extraction.utils import write_excel, load_excel, basic_data_cleanup
+from data_extraction.customer_data_extraction import process_excel_file
 
-    # import satisfaction data
-    location = os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx')
-    df_Kundenmonitor2023 = pd.read_excel(location, sheet_name="EE")
-    location = os.path.join(os.path.dirname(__file__), '../data/custom_files/summary_df_2024.xlsx')
-    df_Kundenmonitor2024 = pd.read_excel(location)
+def kundenmonitor_extraction(year):
+
+    if year != 2023 and year != 2024:
+        print(f"Error: Only 2023 and 2024 are supported. Got year={year}")
+        return None
+
+    # Switch statement for file names based on year
+    file_map = {
+        2023: os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2023.xlsx'),
+        2024: os.path.join(os.path.dirname(__file__), '../data/Kundenmonitor_GKV_2024.xlsx')
+    }
+
+    file_name = file_map.get(year)
+    if not file_name:
+        print(f"Error: File name not found")
+        return None
+
+    process_excel_file(file_name, year)
+
+    # Get the path for the custom summary file for the given year
+    file_name = os.path.join(os.path.dirname(__file__), f'../data/custom_files/summary_df_{year}.xlsx')
+    df = pd.read_excel(file_name)
+
+    df.rename(columns={df.columns[0]: "Krankenkasse"}, inplace=True)
+    
+    df = basic_data_cleanup(df, 'Krankenkasse')
+    
+    # Store the cleaned DataFrame as an Excel file for testing
+    test_output_dir = os.path.join(os.path.dirname(__file__), '../data/test_outputs')
+    os.makedirs(test_output_dir, exist_ok=True)
+    df.to_excel(os.path.join(test_output_dir, f'kundenmonitor_{year}_cleaned_test.xlsx'), index=False)
+
+    # Set the first column as index, transpose, then reset index to preserve all data
+    df_t = df.set_index(df.columns[0]).transpose().reset_index()
+
+    df_t.rename(columns={df_t.columns[0]: "Krankenkasse"}, inplace=True)
+    df_t = basic_data_cleanup(df_t, 'Krankenkasse')
+
+    return df_t
+
+def merge_churn_with_satisfaction():
+
+    # merge it with the matching table
+    matching_path = os.path.join(os.path.dirname(__file__), '../data/matching_tabelle.xlsx')
+    matching_df = pd.read_excel(matching_path)
+
+    df_dem_24 = kundenmonitor_extraction(2024)
+    df_dem_24.rename(columns={"Krankenkasse": "Name_dem_24"}, inplace=True)
+
+    df_dem_23 = kundenmonitor_extraction(2023)
+    df_dem_23.rename(columns={"Krankenkasse": "Name_dem_23"}, inplace=True)
+
+    #renaming for merging
+    matching_df.rename(columns={"Name_fm": "Krankenkasse"}, inplace=True)
+
+    df_Kundenmonitor2023 = df_dem_23.merge(matching_df, on="Name_dem_23", how="left")
+    df_Kundenmonitor2024 = df_dem_24.merge(matching_df, on="Name_dem_24", how="left")
+
+    # Drop the 'Name_dem_23' and 'Name_dem_24' columns from the merged DataFrames
+    df_Kundenmonitor2023_t = df_Kundenmonitor2023.drop(columns=['Name_dem_23'])
+    df_Kundenmonitor2024_t = df_Kundenmonitor2024.drop(columns=['Name_dem_24'])
+
+    # Add a 'Jahr' column to each DataFrame with the corresponding year
+    df_Kundenmonitor2023_t['Jahr'] = 2023
+    df_Kundenmonitor2024_t['Jahr'] = 2024
 
     # import other data
     fuz_combine_fees_morbidity()
@@ -26,37 +87,16 @@ def merge_churn_with_satisfaction():
     df_churn['Quartal'] = df_churn['Quartal'].astype(int)
     df_churn['Date'] = pd.PeriodIndex(df_churn['Jahr'].astype(str) + 'Q' + df_churn['Quartal'].astype(str), freq='Q').to_timestamp()
 
-    # Prepare both Kundenmonitor datasets for merging
-    def prepare_kundenmonitor(df, year):
-        df_t = df.set_index('Unnamed: 0').transpose()
-        df_t = df_t.reset_index().rename(columns={'index': 'Krankenkasse'})
-        df_t['Jahr'] = year
-        # Deduplicate column names robustly
-        if hasattr(pd.io.parsers, 'ParserBase'):
-            df_t.columns = pd.io.parsers.ParserBase._maybe_dedup_names(list(df_t.columns))
-        else:
-            # Manual deduplication fallback
-            def dedup_columns(cols):
-                counts = {}
-                new_cols = []
-                for col in cols:
-                    if col not in counts:
-                        counts[col] = 0
-                        new_cols.append(col)
-                    else:
-                        counts[col] += 1
-                        new_cols.append(f"{col}.{counts[col]}")
-                return new_cols
-            df_t.columns = dedup_columns(list(df_t.columns))
-        return df_t
-
-    df_Kundenmonitor2023_t = prepare_kundenmonitor(df_Kundenmonitor2023, 2023)
-    df_Kundenmonitor2024_t = prepare_kundenmonitor(df_Kundenmonitor2024, 2024)
-
     # Align columns before concatenation to avoid InvalidIndexError
     common_cols = df_Kundenmonitor2023_t.columns.intersection(df_Kundenmonitor2024_t.columns)
     df_Kundenmonitor2023_t = df_Kundenmonitor2023_t[common_cols]
     df_Kundenmonitor2024_t = df_Kundenmonitor2024_t[common_cols]
+
+    # Store both Kundenmonitor DataFrames as test Excel files
+    test_output_dir = os.path.join(os.path.dirname(__file__), '../data/test_outputs')
+    os.makedirs(test_output_dir, exist_ok=True)
+    df_Kundenmonitor2023_t.to_excel(os.path.join(test_output_dir, 'kundenmonitor_2023_t_test.xlsx'), index=False)
+    df_Kundenmonitor2024_t.to_excel(os.path.join(test_output_dir, 'kundenmonitor_2024_t_test.xlsx'), index=False)
 
     # Concatenate both years
     df_kundenmonitor_all = pd.concat([df_Kundenmonitor2023_t, df_Kundenmonitor2024_t], ignore_index=True)
@@ -86,5 +126,25 @@ def merge_churn_with_satisfaction():
 
     # Calculate percentual change in members compared to next quarter for each Krankenkasse
     df_merged['Mitglieder_pct_change_next'] = df_merged['Mitglieder_diff_next'] / df_merged['Mitglieder']
+
+    df_merged = df_merged.dropna(axis=1, how='all')
     
     return df_merged
+
+
+if __name__ == "__main__":
+    # Example: extract for 2023
+    # Store the result of kundenmonitor_extraction for both years
+    #df_kundenmonitor_2023 = kundenmonitor_extraction(2023)
+    #df_kundenmonitor_2024 = kundenmonitor_extraction(2024)
+
+    # Store the result of merge_churn_with_satisfaction
+    df_merged = merge_churn_with_satisfaction()
+
+    # Write results to Excel files for testing
+    output_dir = os.path.join(os.path.dirname(__file__), '../data/test_outputs')
+    os.makedirs(output_dir, exist_ok=True)
+
+    #df_kundenmonitor_2023.to_excel(os.path.join(output_dir, 'kundenmonitor_2023_test.xlsx'), index=False)
+    #df_kundenmonitor_2024.to_excel(os.path.join(output_dir, 'kundenmonitor_2024_test.xlsx'), index=False)
+    df_merged.to_excel(os.path.join(output_dir, 'merged_churn_with_satisfaction_test.xlsx'), index=False)

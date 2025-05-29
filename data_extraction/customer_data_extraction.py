@@ -190,6 +190,37 @@ def analyze_subtable(grouped_subtables, number=4, df=None):
             index=["".join(question[0])]
         )
         return df
+    
+    
+def process_excel_file(file_path, year):
+    """
+    Process the given Excel file and return the summary DataFrame.
+
+    Parameters:
+        file_path (str): Path to the Excel file.
+
+    Returns:
+        pd.DataFrame: The summary DataFrame with analyzed subtable values.
+    """
+    # Ensure the DataFrame is read the same way as in the main block
+    df_data = pd.read_excel(file_path, sheet_name='Band', header=None)
+    # Optionally, reset the index to ensure consistency
+    grouped_subtables = find_subtables_with_question(df_data)
+
+    summary_df = None
+    for i in range(len(grouped_subtables)):
+        try:
+            summary_df = analyze_subtable(grouped_subtables, i, summary_df)
+        except Exception as e:
+            print(f"Error analyzing subtable {i}: {e}")
+
+    # Store for later usage
+    if summary_df is not None:
+        output_dir = os.path.join(os.path.dirname(__file__), '../data/custom_files/')
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, f'summary_df_{year}.xlsx')
+        summary_df.to_excel(output_file)
+        print(f"Summary DataFrame saved to {output_file}")
 
 
 

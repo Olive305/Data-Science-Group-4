@@ -1,6 +1,9 @@
 import pandas as pd
+import sys
+import os
 from rapidfuzz import process, fuzz
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.data_extractor import find_demo_24, find_demo_23
 
 from data_extraction.utils import basic_data_cleanup, write_excel, load_excel

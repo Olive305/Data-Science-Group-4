@@ -32,13 +32,14 @@ def write_excel(df: pd.DataFrame, relative_path: str, **kwargs) -> None:
     df.to_excel(abs_path, **kwargs)
 
 
-def basic_data_cleanup(df, column = 'Krankenkasse'):
+def basic_data_cleanup(df: pd.DataFrame, column: str = 'Krankenkasse') -> pd.DataFrame:
     """
     Cleans all of the data from one row of the df
-    :param df:
-    :return:
+    :param df: pandas DataFrame
+    :param column: column to clean
+    :return: cleaned DataFrame
     """
-    df[column]= (
+    df[column] = (
         df[column]
         .str.lower()
         .str.replace('-', '', regex=True)
