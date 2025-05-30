@@ -25,3 +25,10 @@ Code an data of the paper:
 - For not needing to install all dependencies manually
 - First run `pipenv install`
 - Choose pipenv as interpretor
+
+## Running the code
+- To run the code please clone the git repo to your local machine
+- The code is written in Python 3.13 so installing Python is required
+- Nagivate to main.py and run it
+- Then there will be a prompt asking you which model you would like to see
+- Simply enter one of the presented commands to run the model
