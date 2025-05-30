@@ -74,5 +74,5 @@ def mem():
 
     print("\nModerators sorted by FDR-corrected p-value:")
     print(significant_moderators)
-
+    return significant_moderators
 

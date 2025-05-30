@@ -27,14 +27,15 @@ def searcher(search,df, start_row=0):
 
 
 
-def extract_satisfaction():
+
+def extract_satisfaction(path, sheetname):
     """
     extracts the satisfaction from Kundenmonitor 2023 data
     return the df with the satisfaction
     """
     search = "Ausgewiesene Werte sind Mittelwerte: Alle Fragen auf einer fünfstufigen Skala von"
 
-    df=load_excel('../data/Kundenmonitor_GKV_2024.xlsx', sheet_name="Band", header=None)
+    df=load_excel(path, sheet_name=sheetname, header=None)
     df_result= pd.DataFrame()
     start_row=0
     while True:
@@ -53,7 +54,7 @@ def extract_satisfaction():
     df_result =df_result.T
     df_result.columns = df_result.iloc[0]
     df_result = df_result.drop(df_result.index[0])
-
+    df_result = df_result.dropna(axis=1, how='all')
     return df_result
 
 def clean_demo(df):
@@ -96,7 +97,7 @@ def find_demographics(df_demo):
         df_result = pd.merge(df_result, df, on="Krankenkasse", how="left")
 
         start_row = end + 1
-
+    df_result.reset_index(drop=True, inplace=True)
     return df_result
 def find_demo_23():
     df = load_excel('../data/Kundenmonitor_GKV_2023.xlsx', sheet_name="Band", header = None)
@@ -121,3 +122,11 @@ def checker():
     # XOR mit Sets
     xor = set(list1) ^ set(list2)
     print(xor)
+
+def sat_23():
+    df = extract_satisfaction('../data/Kundenmonitor_GKV_2023.xlsx', 'Band (2)')
+    return df
+def sat_24():
+    df = extract_satisfaction('../data/Kundenmonitor_GKV_2024.xlsx', 'Band')
+    return df
+print(find_demo_23())
