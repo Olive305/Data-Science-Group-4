@@ -23,54 +23,73 @@ class NeuralNetwork(nn.Module):
     def __init__(self, input_size):
         super(NeuralNetwork, self).__init__()
         self.model = nn.Sequential(
-            nn.Linear(input_size, 16),
-            nn.BatchNorm1d(16),
-            nn.SiLU(),
-            nn.Dropout(0.3),
-            nn.Linear(16, 32),
-            nn.BatchNorm1d(32),
-            nn.SiLU(),
-            nn.Dropout(0.3),
-            nn.Linear(32, 64),
+            nn.Linear(input_size, 64),
             nn.BatchNorm1d(64),
             nn.SiLU(),
             nn.Dropout(0.3),
-            nn.Linear(64, 1),
+            nn.Linear(64, 32),
+            nn.BatchNorm1d(32),
+            nn.SiLU(),
+            nn.Dropout(0.3),
+            nn.Linear(32, 1),
+
         )
 
     def forward(self, x):
         return self.model(x)
 
 def train_and_save_neural_network():
+    # --- Data Preparation ---
+    # Run any required preprocessing from other modules
     reg_morb_fee_churn()
     df_merged = merge_churn_with_satisfaction()
+
+    # Identify categorical columns and one-hot encode them
     categorical_cols = df_merged.select_dtypes(include=['object', 'category']).columns.tolist()
     df_merged = pd.get_dummies(df_merged, columns=categorical_cols, drop_first=True)
+
+    # Select feature columns (excluding target columns)
     satisfaction_columns = df_merged.columns.difference(['Mitglieder_pct_change_next', 'Mitglieder_diff_next'])
     X_df = df_merged[satisfaction_columns].apply(pd.to_numeric, errors='coerce')
     X_df = X_df.dropna()
+
+    # Prepare feature matrix X and target vector y
     X = X_df.values.astype(float)
     y = df_merged.loc[X_df.index, 'Mitglieder_pct_change_next'].values.reshape(-1, 1).astype(float)
+
+    # Filter out rows with NaN or infinite values
     valid_indices = (
         ~np.isnan(X).any(axis=1) & ~np.isnan(y).any(axis=1) &
         ~np.isinf(X).any(axis=1) & ~np.isinf(y).any(axis=1)
     )
     X = X[valid_indices]
     y = y[valid_indices]
+
+    # --- Train/Test Split and Scaling ---
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
+
+    # Multiply target by 100 to convert to percentage
+    y_train = y_train * 100
+    y_test = y_test * 100
+
+    # Convert data to PyTorch tensors
     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
     y_train_tensor = torch.tensor(y_train, dtype=torch.float32)
     X_test_tensor = torch.tensor(X_test, dtype=torch.float32)
     y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
+
+    # --- Model Setup ---
     input_size = X_train.shape[1]
     model = NeuralNetwork(input_size)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    epochs = 20
+    epochs = 100
     batch_size = 32
+
+    # --- Training Loop ---
     for epoch in range(epochs):
         model.train()
         permutation = torch.randperm(X_train_tensor.size(0))
@@ -83,14 +102,15 @@ def train_and_save_neural_network():
             loss.backward()
             optimizer.step()
         if (epoch + 1) % 2 == 0:
-            print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.4f}")
+            print(f"Epoch [{epoch + 1}/{epochs}], Loss: {loss.item():.8f}")
 
-    # Evaluate on test data
+    # --- Evaluation ---
     model.eval()
     with torch.no_grad():
         y_pred = model(X_test_tensor).numpy().flatten()
         y_true = y_test_tensor.numpy().flatten()
         mse_loss = criterion(torch.tensor(y_pred), torch.tensor(y_true)).item()
+        mae_loss = np.mean(np.abs(y_true - y_pred))
         # R^2 score
         ss_res = np.sum((y_true - y_pred) ** 2)
         ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
@@ -101,14 +121,18 @@ def train_and_save_neural_network():
         f1 = f1_score(y_true_bin, y_pred_bin)
 
         print(
-        f"\nTest Results:\n"
-        f"- MSE Loss (nn.MSELoss): {mse_loss:.4f}\n"
-        f"- R^2 Score: {r2_score:.4f}\n"
-        f"- F1 Score (binarized by sign): {f1:.4f}\n"
-        "MSE Loss is the mean squared error between predictions and true values.\n"
-        "R^2 Score measures how well predictions approximate the real data (1 is perfect).\n"
-        "F1 Score is computed after binarizing the regression output by sign (negative vs positive), for interpretability.\n"
+            f"\nTest Results:\n"
+            f"- MSE Loss (nn.MSELoss): {mse_loss:.4f}\n"
+            f"- MAE Loss: {mae_loss:.4f}\n"
+            f"- R^2 Score: {r2_score:.4f}\n"
+            f"- F1 Score (binarized by sign): {f1:.4f}\n"
+            "MSE Loss is the mean squared error between predictions and true values.\n"
+            "MAE Loss is the mean absolute error between predictions and true values.\n"
+            "R^2 Score measures how well predictions approximate the real data (1 is perfect).\n"
+            "F1 Score is computed after binarizing the regression output by sign (negative vs positive), for interpretability.\n"
         )
+
+    # --- Save Model and Artifacts ---
     torch.save(model.state_dict(), MODEL_PATH)
     joblib.dump(scaler, SCALER_PATH)
     joblib.dump(categorical_cols, CATEGORICAL_COLS_PATH)
@@ -137,7 +161,7 @@ def load_and_predict_neural_network(input_df):
     model.eval()
     with torch.no_grad():
         predictions = model(X_input_tensor).numpy().flatten()
-    print(predictions)
+    print(predictions / 100)
 
 def predict_from_excel(excel_file_path):
     """
