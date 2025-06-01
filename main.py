@@ -11,7 +11,9 @@ def main():
               "Mixed Effects Model : mem\n"
               "Difference in Difference : did\n"
               "Panel Regression : plr\n"
-              "exit : exit"
+              "exit : exit\n"
+              "(Most models other than nn are currently trained when called this will change if all of the data is"
+              "included but right now this makes sense for testing)"
               )
         choice = input("Enter: ").strip().lower()
         if choice == "eda":
