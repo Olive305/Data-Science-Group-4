@@ -28,6 +28,11 @@ Code an data of the paper:
 - First run `pipenv install`
 - Choose pipenv as interpretor
 
+## Using requirements.txt
+- Alternatively you can use `pip install -r requirements.txt`
+- For that you need pip
+- Run the command in your terminal after navigating to the project folder
+
 ## Running the code
 - To run the code please clone the git repo to your local machine
 - The code is written in Python 3.13 so installing Python is required
