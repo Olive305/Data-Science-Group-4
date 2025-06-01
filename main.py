@@ -10,6 +10,7 @@ def main():
               "Random Forest : rf\n"
               "Mixed Effects Model : mem\n"
               "Difference in Difference : did\n"
+              "Panel Regression : plr\n"
               "exit : exit"
               )
         choice = input("Enter: ").strip().lower()
@@ -38,6 +39,9 @@ def main():
         elif choice == "rf":
             from analysis_code.predictive_models import random_forest_regression
             random_forest_regression()
+        elif choice == "plr":
+            from analysis_code.difference_in_difference import panel
+            print(panel().summary())
         elif choice == "mem":
             from analysis_code.mixed_effects_model import mem
             mem()
