@@ -4,8 +4,8 @@ import pandas as pd
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.data_merging import fuz_combine_fees_morbidity
-from data_extraction.utils import write_excel, load_excel, basic_data_cleanup
-from data_extraction.customer_data_extraction import process_excel_file
+from data_extraction.utils import basic_data_cleanup
+from legacy.customer_data_extraction import process_excel_file
 
 def kundenmonitor_extraction(year):
 

@@ -2,7 +2,7 @@ import pandas as pd
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 from sklearn.preprocessing import StandardScaler
-from data_extraction.utils import load_excel
+from data_extraction.utils import load_excel, write_excel
 
 
 def mem():
@@ -72,7 +72,8 @@ def mem():
     results_df = results_df.sort_values('p_adj', na_position='last')
     significant_moderators = results_df[(results_df['p_adj'].notna()) & (results_df['p_adj'] < 0.05)]
 
-    print("\nModerators sorted by FDR-corrected p-value:")
-    print(significant_moderators)
+    #print("\nModerators sorted by FDR-corrected p-value:")
+    #print(type(significant_moderators))
+    write_excel(significant_moderators, '../data/significant_moderators.xlsx', index=False)
     return significant_moderators
 

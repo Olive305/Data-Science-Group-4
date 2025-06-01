@@ -42,7 +42,8 @@ def main():
             from analysis_code.mixed_effects_model import mem
             mem()
         elif choice == "did":
-            print("not available")
+            from analysis_code.difference_in_difference import did
+            print(did().summary())
         elif choice == "exit":
             break
         else:
