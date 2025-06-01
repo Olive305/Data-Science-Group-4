@@ -1,4 +1,3 @@
-import statsmodels.formula.api as smf
 
 from data_extraction.utils import load_excel
 
