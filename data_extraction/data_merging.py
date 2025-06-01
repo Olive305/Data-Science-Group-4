@@ -10,10 +10,16 @@ pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', None)
 
 def fuz_combine_fees_morbidity():
+    """
+    combines Zusatzbeitrag with Morbidity
+    probably should be rewritten and simply included in the matching table for easier versioning
+    writes to excel file ../data/morb_fee_merged.xlsx
+    """
     #import data
     df_fees = load_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
     df_morbidity = load_excel('../data/Morbidity_Region.xlsx')
 
+    #exceptions that did not work with fuzzy matching
     df_morbidity['Krankenkasse'] = (
         df_morbidity['Krankenkasse']
         .replace('BKK der MTU Friedrichshafen', 'BKK MTU', regex=False)

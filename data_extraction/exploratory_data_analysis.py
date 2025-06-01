@@ -4,6 +4,7 @@ from data_extraction.utils import load_excel
 
 
 def full_eda():
+
     df = load_excel('../data/fm_dem_merged.xlsx')
     df = df.drop(df.columns[0], axis=1)
     print("Shape:", df.shape)
