@@ -112,7 +112,7 @@ def reg_morb_fee_churn():
     returns the df for further models
     """
     try:
-        df= load_excel("../data/morb_fee_merged.xlsx")
+        df= load_excel('../data/morb_fee_merged.xlsx')
     except FileNotFoundError:
         fuz_combine_fees_morbidity()
         df = load_excel("../data/morb_fee_merged.xlsx")

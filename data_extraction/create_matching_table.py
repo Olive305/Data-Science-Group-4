@@ -114,7 +114,7 @@ def build_matching_23():
 
     df_mapping.rename(columns={"Name_dem": "Name_dem_23"}, inplace=True)
     df_result = df_result.merge(df_mapping, on="Name_fm", how="left")
-    write_excel(df_result, "../data/matching_tabelle.xlsx")
+    write_excel(df_result, "../data/matching_tabelle.xlsx", index = False)
 df_mapping = build_matching_23()
 
 

@@ -56,8 +56,8 @@ def fuz_combine_fees_morbidity():
     #df_merged.to_excel(merged_path, index=False)
 
     #print(df_merged[df_merged.duplicated(subset=['Krankenkasse','Jahr'])])
-    write_excel(df_merged, "../data/morb_fee_merged.xlsx")
-
+    write_excel(df_merged, "../data/morb_fee_merged.xlsx", index = False)
+#fuz_combine_fees_morbidity()
 """
 s1='metzingerbkk'
 s2='bkkmetzinger'

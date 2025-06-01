@@ -25,7 +25,17 @@ def searcher(search,df, start_row=0):
     return df_block, end
 
 
-
+def clean_sat(df):
+    df = df.drop(index=1).reset_index(drop=True)
+    df = df.drop(df.columns[1], axis=1)
+    #df = df.drop(index=0).reset_index(drop=True)
+    df.columns = df.iloc[0]
+    df = df.drop(index=0).reset_index(drop=True)
+    cols = list(df.columns)
+    cols[0] = 'Krankenkasse'
+    df.columns = cols
+    df = df.dropna(axis=1, how='all')
+    return df
 
 
 def extract_satisfaction(path, sheetname):
@@ -36,25 +46,25 @@ def extract_satisfaction(path, sheetname):
     search = "Ausgewiesene Werte sind Mittelwerte: Alle Fragen auf einer fünfstufigen Skala von"
 
     df=load_excel(path, sheet_name=sheetname, header=None)
-    df_result= pd.DataFrame()
-    start_row=0
+    df_result, end = searcher(search, df)
+    df_result =clean_sat(df_result)
+    #print(df_result)
+    start_row=end +1
     while True:
         df_block, end = searcher(search,df,start_row)
         if df_block.empty:
             break
+        df_block = clean_sat(df_block)
+        df_block = df_block.drop(df_block.columns[0], axis=1)
         df_result = pd.concat([df_result, df_block], axis=1)
+        #df_result = pd.merge(df_result, df_block, on="Krankenkasse", how="left")
         start_row = end + 1
-    df_result = df_result.drop(index=1).reset_index(drop=True)
+    df_result = df_result.T
+    df_result = df_result.reset_index()
     df_result.columns = df_result.iloc[0]
     df_result = df_result.drop(index=0).reset_index(drop=True)
-    cols = list(df_result.columns)
-    cols[0] = 'Krankenkasse'
-    df_result.columns = cols
-    df_result = df_result.loc[:, df_result.columns.notna()]
-    df_result =df_result.T
-    df_result.columns = df_result.iloc[0]
-    df_result = df_result.drop(df_result.index[0])
     df_result = df_result.dropna(axis=1, how='all')
+    df_result = df_result.loc[:, ~df_result.columns.duplicated(keep=False)]
     return df_result
 
 def clean_demo(df):
@@ -129,4 +139,5 @@ def sat_23():
 def sat_24():
     df = extract_satisfaction('../data/Kundenmonitor_GKV_2024.xlsx', 'Band')
     return df
-print(find_demo_23())
+#print(sat_23())
+#print(sat_24())

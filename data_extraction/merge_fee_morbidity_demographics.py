@@ -46,7 +46,7 @@ def merge_fm_dem():
     df_combined = pd.concat([df_fm_24, df_fm_23], ignore_index=True)
 
     df_combined = df_combined.drop(columns=['Name_dem_24', 'Name_dem_23'])
-    write_excel(df_combined, '../data/fm_dem_merged.xlsx')
+    write_excel(df_combined, '../data/fm_dem_merged.xlsx', index = False)
     return df_combined
 def merge_fm_dm_sat():
     try:
@@ -63,7 +63,10 @@ def merge_fm_dm_sat():
     df = df.merge(df_mapping, on="Krankenkasse", how="left")
 
     df_23= sat_23()
+    df_23.columns = df_23.columns.astype(str).str.strip()
     df_24= sat_24()
+    df_24.columns = df_24.columns.astype(str).str.strip()
+
     df_24 = basic_data_cleanup(df_24, 'Krankenkasse')
     df_24.rename(columns={"Krankenkasse": "Name_dem_24"}, inplace=True)
     df_23 = basic_data_cleanup(df_23, 'Krankenkasse')
@@ -74,6 +77,6 @@ def merge_fm_dm_sat():
     df_combined = pd.concat([df_sat_24, df_sat_23], ignore_index=True)
 
     df_combined = df_combined.drop(columns=['Name_dem_24', 'Name_dem_23'])
-    write_excel(df_combined, '../data/fm_dem_sat_merged.xlsx')
+    write_excel(df_combined, '../data/fm_dem_sat_merged.xlsx', index = False)
 
 merge_fm_dm_sat()
