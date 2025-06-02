@@ -22,7 +22,7 @@ Code an data of the paper:
 - `web_interface_dashboard` contains the code for the final dashboard
 - `legacy` contains code no longer in use
 
-## Using the Pipenv environment (currently not up to date pease use the alternative way explained below
+## Using the Pipenv environment (currently not up to date please use the alternative way explained below)
 
 - For not needing to install all dependencies manually
 - First run `pipenv install`
