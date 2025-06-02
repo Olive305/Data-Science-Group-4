@@ -22,7 +22,7 @@ Code an data of the paper:
 - `web_interface_dashboard` contains the code for the final dashboard
 - `legacy` contains code no longer in use
 
-## Using the Pipenv environment
+## Using the Pipenv environment (currently not up to date pease use the alternative way explained below
 
 - For not needing to install all dependencies manually
 - First run `pipenv install`
@@ -32,6 +32,7 @@ Code an data of the paper:
 - Alternatively you can use `pip install -r requirements.txt`
 - For that you need pip
 - Run the command in your terminal after navigating to the project folder
+- This requires python 3.10
 
 ## Running the code
 - To run the code please clone the git repo to your local machine
