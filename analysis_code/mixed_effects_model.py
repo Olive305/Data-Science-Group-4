@@ -2,12 +2,18 @@ import pandas as pd
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 from sklearn.preprocessing import StandardScaler
+
+from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
 from data_extraction.utils import load_excel, write_excel
 
 
 def mem():
     # Load merged dataset
-    df = load_excel('../data/fm_dem_merged.xlsx')
+    try:
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    except FileNotFoundError:
+        merge_fm_dm_sat()
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
 
     # Drop unnamed first column if present (index from Excel export)
     if df.columns[0].startswith('Unnamed'):

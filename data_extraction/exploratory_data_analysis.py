@@ -1,11 +1,15 @@
 import pandas as pd
 
+from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
 from data_extraction.utils import load_excel
 
 
 def full_eda():
-
-    df = load_excel('../data/fm_dem_merged.xlsx')
+    try:
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    except FileNotFoundError:
+        merge_fm_dm_sat()
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
     df = df.drop(df.columns[0], axis=1)
     print("Shape:", df.shape)
     print("Info:")

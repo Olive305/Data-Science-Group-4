@@ -32,7 +32,12 @@ def run_causal_forest(
     """
 
     # Load the data
-    df = pd.read_excel(filepath)
+    try:
+        df = pd.read_excel(filepath)
+    except FileNotFoundError:
+        from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
+        merge_fm_dm_sat()
+        df = pd.read_excel(filepath)
 
     # Define treatment and outcome
     T = df[treatment_col].values

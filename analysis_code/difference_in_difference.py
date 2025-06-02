@@ -1,4 +1,5 @@
-
+from analysis_code.mixed_effects_model import mem
+from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
 from data_extraction.utils import load_excel
 
 import statsmodels.formula.api as smf
@@ -29,8 +30,16 @@ def run_panel_regression(df, moderators=None):
     return model
 
 def panel():
-    df = load_excel('../data/fm_dem_sat_merged.xlsx')
-    moderators = load_excel('../data/significant_moderators.xlsx')
+    try:
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    except FileNotFoundError:
+        merge_fm_dm_sat()
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    try:
+        moderators = load_excel('../data/significant_moderators.xlsx')
+    except FileNotFoundError:
+        mem()
+        moderators = load_excel('../data/significant_moderators.xlsx')
     mods = moderators['Moderator'].tolist()
     model = run_panel_regression(df, mods)
     return model
@@ -47,7 +56,11 @@ def run_did_regression(df, moderators=None,
     model = smf.ols(formula=formula, data=df).fit()
     return model
 def did():
-    df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    try:
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    except FileNotFoundError:
+        merge_fm_dm_sat()
+        df = load_excel('../data/fm_dem_sat_merged.xlsx')
     df['post'] = (df['ZB_diff'] != 0).astype(int)
     moderators = load_excel('../data/significant_moderators.xlsx')
     mods = moderators['Moderator'].tolist()
