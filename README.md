@@ -6,6 +6,7 @@ Code an data of the paper:
 - Health insurers in Germany have continuely increased their additional contribution fee in recent years
 - We investigate if this even leads to a financial gain for the insurance providers
 - In oder to do that we use causal inference methods to predict churn rate based on contribution increases
+- Then we use this model to calculate the ideal contribution increase
 
 # Data
 - The following data will be included and is mandatory for the code to work: Kundenmonitor_GKV_2023, Kundenmonitor_GKV_2024, Marktanteile je Kasse, Morbidity_Region, Zusatzbeitrag_je Kasse je Quartal, Krankkosten
