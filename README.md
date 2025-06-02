@@ -33,6 +33,12 @@ Code an data of the paper:
 - For that you need pip
 - Run the command in your terminal after navigating to the project folder
 - This requires python 3.10
+- If you have a different version of python installed already please install python 3.10 from the official python Website
+- Then run:
+  `py -3.10 -m venv .venv
+  .venv\Scripts\activate
+  pip install -r requirements.txt`
+
 
 ## Running the code
 - To run the code please clone the git repo to your local machine
