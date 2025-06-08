@@ -4,8 +4,6 @@ import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
-
 def load_excel(relative_path: str, sheet_name: str = None, header=0,**kwargs) -> pd.DataFrame:
     """
     loads an excel file into a pandas dataframe
@@ -48,5 +46,13 @@ def basic_data_cleanup(df: pd.DataFrame, column: str = 'Krankenkasse') -> pd.Dat
         .str.replace('–', '', regex=True)
         .str.strip()
         .str.replace(r'\s+', '', regex=True)
+    )
+    return df
+def column_name_cleanup(df: pd.DataFrame) -> pd.DataFrame:
+    df.columns = (
+        df.columns
+        .str.strip()
+        .str.replace(' ', '_')
+        .str.replace(r'[^A-Za-z0-9_]', '', regex=True)
     )
     return df

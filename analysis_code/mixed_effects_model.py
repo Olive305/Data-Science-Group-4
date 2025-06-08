@@ -3,24 +3,38 @@ import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 from sklearn.preprocessing import StandardScaler
 
-from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
-from data_extraction.utils import load_excel, write_excel
+from data_extraction.utils import load_excel, write_excel, column_name_cleanup
 
+"""
+this might not be necessary bcs by using causal forests it does automatic feature selection and in DiD I can simply use
+R² to lasso the correct moderators
+"""
 
 def mem():
     # Load merged dataset
     try:
         df = load_excel('../data/fm_dem_sat_merged.xlsx')
     except FileNotFoundError:
+        print("File not found")
+        from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
         merge_fm_dm_sat()
         df = load_excel('../data/fm_dem_sat_merged.xlsx')
 
-    # Drop unnamed first column if present (index from Excel export)
+    # Drop unnamed first column if present (index from Excel export) -> does not matter anymore s the issue was fixed
     if df.columns[0].startswith('Unnamed'):
         df = df.drop(df.columns[0], axis=1)
 
     # Ensure group variable is categorical
     df['Krankenkasse'] = df['Krankenkasse'].astype('category')
+
+    #cleanup bcs the formula does not work otherwise
+    df = column_name_cleanup(df)
+
+    #replacing the few NaNs with median of column
+    try:
+        df = df.fillna(df.median())
+    except Exception as e:
+        i =0 #this is supposed to do nothing :)
 
     # Define independent and dependent variables
     iv = 'ZB_diff'  # Zusatzbeitragsänderung
@@ -83,3 +97,4 @@ def mem():
     write_excel(significant_moderators, '../data/significant_moderators.xlsx', index=False)
     return significant_moderators
 
+print(mem())
