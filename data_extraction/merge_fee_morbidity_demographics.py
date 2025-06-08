@@ -71,4 +71,6 @@ def merge_fm_dm_sat():
     df_result = pd.concat([df_sat_24, df_sat_23], ignore_index=True)
 
     df_result = df_result.drop(columns=['Name_sat_24', 'Name_sat_23'])
+    df_result = df_result.dropna(axis=1, how='all')
     write_excel(df_result, '../data/fm_dem_sat_merged.xlsx', index=False)
+merge_fm_dm_sat()

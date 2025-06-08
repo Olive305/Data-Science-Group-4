@@ -2,6 +2,9 @@ import os
 import pandas as pd
 import os
 import sys
+
+from sklearn.preprocessing import StandardScaler
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 def load_excel(relative_path: str, sheet_name: str = None, header=0,**kwargs) -> pd.DataFrame:
@@ -56,3 +59,9 @@ def column_name_cleanup(df: pd.DataFrame) -> pd.DataFrame:
         .str.replace(r'[^A-Za-z0-9_]', '', regex=True)
     )
     return df
+
+def normalize_features(X: pd.DataFrame):
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    X_norm = pd.DataFrame(X_scaled, columns=X.columns, index=X.index)
+    return X_norm, scaler
