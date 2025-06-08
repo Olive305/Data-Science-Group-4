@@ -96,5 +96,3 @@ def mem():
     #print(type(significant_moderators))
     write_excel(significant_moderators, '../data/significant_moderators.xlsx', index=False)
     return significant_moderators
-
-print(mem())

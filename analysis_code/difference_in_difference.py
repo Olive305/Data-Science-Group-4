@@ -1,69 +1,68 @@
-from analysis_code.mixed_effects_model import mem
-from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
-from data_extraction.utils import load_excel
-
+from data_extraction.utils import load_excel, column_name_cleanup
 import statsmodels.formula.api as smf
 
-
-def run_panel_regression(df, moderators=None):
+def run_panel_regression(df, dependent_var='Mitglieder_diff_next', treatment_var='ZB_diff', entity_var='Krankenkasse', time_var='Quartal'):
     """
-    Runs a panel regression with lagged treatment effect:
-    Effect of ZB_diff_t on MG_diff_{t+1}.
+    Runs a fixed-effects panel regression with lagged treatment effect:
+    Effect of treatment_var at time t on dependent_var at t+1.
 
-    Parameters:
-    - df: DataFrame with columns: 'KK' (Krankenkasse), 'Quartal', 'ZB_diff', 'MG_diff_next', plus ggf. Moderators
-    - moderators: list of moderator variable names
-
-    Returns:
-    - fitted model result
+    Automatically uses all other columns (except specified vars) as controls.
     """
+    # Identify control variables: all columns excluding the main vars
+    exclude = {dependent_var, treatment_var, entity_var, time_var}
+    controls = [col for col in df.columns if col not in exclude]
 
-    # Baue Formel
-    formula = "Mitglieder_diff_next ~ ZB_diff"
-    if moderators:
-        formula += " + " + " + ".join(moderators)
+    # Build formula
+    parts = [treatment_var] + controls
+    formula = f"{dependent_var} ~ " + " + ".join(parts)
+    # Add fixed effects
+    formula += f" + C({entity_var}) + C({time_var})"
 
-    # Füge Fixed Effects (Krankenkasse und Quartal) hinzu
-    formula += " + C(Krankenkasse) + C(Date)"
+    model = smf.ols(formula=formula, data=df).fit()
+    return model
+
+def run_did_regression(df, dependent_var='Mitglieder_diff_next', treatment_var='ZB_diff', entity_var='Krankenkasse', time_var='Quartal'):
+    """
+    Runs a staggered DiD regression, using binary treatment and post indicators.
+
+    Uses all other columns (except specified vars) as controls.
+    """
+    # Create binary treatment and post indicators
+    df = df.copy()
+    df['treatment'] = (df[treatment_var] != 0).astype(int)
+    # Determine first treatment quarter for each entity
+    first_treat = df[df['treatment'] == 1].groupby(entity_var)[time_var].min()
+    df = df.join(first_treat.rename('first_treat'), on=entity_var)
+    df['post'] = (df[time_var] >= df['first_treat']).astype(int)
+
+    # Identify control variables
+    exclude = {dependent_var, treatment_var, entity_var, time_var, 'treatment', 'post', 'first_treat'}
+    controls = [col for col in df.columns if col not in exclude]
+
+    # Build formula
+    formula = (f"{dependent_var} ~ treatment * post"
+               + (" + " + " + ".join(controls) if controls else "")
+               + f" + C({entity_var}) + C({time_var})")
 
     model = smf.ols(formula=formula, data=df).fit()
     return model
 
 def panel():
-    try:
-        df = load_excel('../data/fm_dem_sat_merged.xlsx')
-    except FileNotFoundError:
-        merge_fm_dm_sat()
-        df = load_excel('../data/fm_dem_sat_merged.xlsx')
-    try:
-        moderators = load_excel('../data/significant_moderators.xlsx')
-    except FileNotFoundError:
-        mem()
-        moderators = load_excel('../data/significant_moderators.xlsx')
-    mods = moderators['Moderator'].tolist()
-    model = run_panel_regression(df, mods)
+    df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    df= column_name_cleanup(df)
+    model = run_panel_regression(df)
     return model
-def run_did_regression(df, moderators=None,
-                       dependent_var='Mitglieder_diff_next',
-                       treatment_var='ZB_diff',
-                       time_var='post'):
-    formula = f"{dependent_var} ~ {treatment_var} + {time_var} + {treatment_var}:{time_var}"
 
-    if moderators:
-        formula += " + " + " + ".join(moderators)
-
-    # Fit OLS regression
-    model = smf.ols(formula=formula, data=df).fit()
-    return model
 def did():
-    try:
-        df = load_excel('../data/fm_dem_sat_merged.xlsx')
-    except FileNotFoundError:
-        merge_fm_dm_sat()
-        df = load_excel('../data/fm_dem_sat_merged.xlsx')
-    df['post'] = (df['ZB_diff'] != 0).astype(int)
-    moderators = load_excel('../data/significant_moderators.xlsx')
-    mods = moderators['Moderator'].tolist()
-    model = run_did_regression(df, mods)
+    df = load_excel('../data/fm_dem_sat_merged.xlsx')
+    df = column_name_cleanup(df)
+    model = run_did_regression(df)
     return model
-#print(did().summary())
+
+if __name__ == '__main__':
+    panel_model = panel()
+    print(panel_model.summary())
+    """
+    did_model = did()
+    print(did_model.summary())
+    """

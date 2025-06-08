@@ -13,7 +13,6 @@ def run_causal_forest(
     filepath="../data/fm_dem_sat_merged.xlsx",
     treatment_col="ZB_diff",
     outcome_col="Mitglieder_diff_next",
-    drop_cols=None,
     plot_effects=True,
 ):
     # Load data
@@ -23,11 +22,6 @@ def run_causal_forest(
         from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
         merge_fm_dm_sat()
         df = pd.read_excel(filepath)
-
-    # Drop columns that are entirely empty or specified by user
-    df = df.dropna(axis=1, how="all")
-    if drop_cols:
-        df = df.drop(columns=drop_cols, errors="ignore")
 
     # Fill missing numeric values with column medians
     df = df.fillna(df.median(numeric_only=True))
@@ -88,13 +82,13 @@ def run_causal_forest(
         plt.grid(True)
         plt.show()
 
-    return model, te_pred, scaler  # scaler zurückgeben falls später nötig
+    return model, te_pred, scaler
 
 
 def ca_fo():
-    # Beispiel: drop Krankenkasse Spalte explizit
-    model, te_pred, scaler = run_causal_forest(drop_cols=["Krankenkasse"])
-    print("\nSample CATEs:", te_pred[:5])  # Erste 5 geschätzte Effekte ausgeben
+
+    model, te_pred, scaler = run_causal_forest()
+    print("\nSample CATEs:", te_pred[:5])
 
 
 if __name__ == "__main__":

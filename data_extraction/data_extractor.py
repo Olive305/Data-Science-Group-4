@@ -8,6 +8,13 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', None)
 def searcher(search,df, start_row=0):
+    """
+    function that searches for the specified search term within a dataframe
+    :param search:
+    :param df:
+    :param start_row:
+    :return:
+    """
 
     line = df.loc[start_row:, 0].astype(str).str.contains(search, na=False)
     if not line.any():
@@ -26,6 +33,11 @@ def searcher(search,df, start_row=0):
 
 
 def clean_sat(df):
+    """
+    cleans the dataframe
+    :param df:
+    :return:
+    """
     df = df.drop(index=1).reset_index(drop=True)
     df = df.drop(df.columns[1], axis=1)
     #df = df.drop(index=0).reset_index(drop=True)
@@ -68,6 +80,11 @@ def extract_satisfaction(path, sheetname):
     return df_result
 
 def clean_demo(df):
+    """
+
+    :param df:
+    :return:
+    """
     df = df.drop(df.columns[1], axis=1)  # drops Gesamt
     df = df.drop([2, 3]).reset_index(drop=True)  # drops n gesamt
     df = df.iloc[:-2].reset_index(drop=True)  # drops weiß nicht and summe
@@ -92,6 +109,11 @@ def clean_demo(df):
     return df
 
 def find_demographics(df_demo):
+    """
+    finds the demographic table in a given dataframe using the keyword that identifies it
+    :param df_demo:
+    :return: df_demo
+    """
     search = "Bei welcher gesetzlichen Krankenkasse sind Sie krankenversichert?"
 
     start_row=0
@@ -110,16 +132,29 @@ def find_demographics(df_demo):
     df_result.reset_index(drop=True, inplace=True)
     return df_result
 def find_demo_23():
+    """
+    runs the find_demographic() function using the Kundenmonitor 2023 data
+    :return: df with the demographics
+    """
     df = load_excel('../data/Kundenmonitor_GKV_2023.xlsx', sheet_name="Band", header = None)
     df = find_demographics(df)
     df = df.dropna(axis=1, how='all')
     return df
 def find_demo_24():
+    """
+    runs the find_demographic() function using the Kundenmonitor 2024 data
+    :return: df with the demographics
+    """
     df = load_excel('../data/Kundenmonitor_GKV_2024.xlsx', sheet_name="Band", header = None)
     df = find_demographics(df)
     df = df.dropna(axis=1, how='all')
     return df
 def checker():
+    """
+    this is legacy code
+    but it compares the dfs with demographic data if they have matching KKs
+    :return:
+    """
     df1=find_demo_23()
     df2= find_demo_24()
     print(df1["Krankenkasse"].unique())
@@ -134,9 +169,19 @@ def checker():
     print(xor)
 
 def sat_23():
+    """
+    runs extract_satifsaction() using the data from 2023
+    return the df with the satisfaction
+    :return: df -> pd.DataFrame
+    """
     df = extract_satisfaction('../data/Kundenmonitor_GKV_2023.xlsx', 'Band (2)')
     return df
 def sat_24():
+    """
+    runs extract_satifsaction() using the data from 2024
+    return the df with the satisfaction
+    :return: df -> pd.DataFrame
+    """
     df = extract_satisfaction('../data/Kundenmonitor_GKV_2024.xlsx', 'Band')
     return df
 #print(sat_23())
