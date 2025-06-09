@@ -27,7 +27,7 @@ def load_data(panel_path: str = '../data/fm_dem_sat_merged.xlsx') -> pd.DataFram
 def fit_mixed_effects(df: pd.DataFrame,
                       entity_var: str = 'Krankenkasse',
                       time_var: str = 'Date',
-                      treatment_var: str = 'Zusatzbeitrag_diff',
+                      treatment_var: str = 'ZB_diff',
                       outcome_var: str = 'Mitglieder_diff_next'):
     """
     Fit a mixed-effects model with random intercepts and random slopes for the treatment variable.
@@ -52,7 +52,7 @@ def fit_mixed_effects(df: pd.DataFrame,
 
 def extract_random_slopes(mixed_res,
                           entity_var: str = 'Krankenkasse',
-                          treatment_var: str = 'Zusatzbeitrag_diff') -> pd.DataFrame:
+                          treatment_var: str = 'ZB_diff') -> pd.DataFrame:
     """
     Extract random slope estimates for the treatment variable for each entity.
 
@@ -76,7 +76,7 @@ def extract_random_slopes(mixed_res,
 def run_metaregression(slopes_df: pd.DataFrame,
                        df_panel: pd.DataFrame,
                        entity_var: str = 'Krankenkasse',
-                       treatment_var: str = 'Zusatzbeitrag_diff',
+                       treatment_var: str = 'ZB_diff',
                        outcome_var: str = 'Mitglieder_diff_next',
                        time_var: str = 'Date') -> sm.regression.linear_model.RegressionResultsWrapper:
     """
@@ -139,7 +139,7 @@ def main():
     print("First 5 random slopes:")
     print(slopes_df.head())
 
-    # Metaregression + Rückgriff auf Daten aus run_metaregression
+    # Metaregression
     numeric = df_panel.select_dtypes(include=[np.number])
     agg = numeric.groupby(df_panel['Krankenkasse']).mean().reset_index()
     meta_df = pd.merge(slopes_df, agg, on='Krankenkasse')

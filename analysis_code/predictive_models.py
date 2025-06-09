@@ -4,8 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import numpy as np
 import random
-import sys
-import os
+
 
 # Add the parent directory to sys.path so data_extraction can be imported
 #sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -88,7 +87,9 @@ def data_cleanup(df):
     df = df.dropna(subset=['Zusatzbeitrag_diff'])
     df = df.dropna(subset=['Mitglieder_diff_next'])
     df['ZB_mean'] = df.groupby('Date')['Zusatzbeitrag_diff'].transform('mean')
-    df['ZB_diff']= df['Zusatzbeitrag_diff'] - df['ZB_mean']
+
+    df.rename(columns={'Zusatzbeitrag_diff': 'ZB_diff'}, inplace=True)
+    #df['ZB_diff']= df['Zusatzbeitrag_diff'] - df['ZB_mean']
     #df['Zusatzbeitrag_diff'] = df['Zusatzbeitrag_diff'].fillna(0)
     #df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'].fillna(0)
 
@@ -142,11 +143,11 @@ def reg_morb_fee_churn():
 
 def regression_fm():
     df = reg_morb_fee_churn()
-    print(df)
+    #print(df)
     linear_regression(df[['ZB_diff', 'Risikofaktor','Mitglieder','MGxRF','Versicherte']], df['Mitglieder_diff_next'], "morb_fee_churn:")
-    df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'] / df['Mitglieder']
-    linear_regression(df[['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Versicherte']], df['Mitglieder_diff_next'],
-                      "morb_fee_churn:")
+    #df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'] / df['Mitglieder']
+    #linear_regression(df[['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Versicherte']], df['Mitglieder_diff_next'],
+     #                 "morb_fee_churn:")
 def clustering():
     df= reg_morb_fee_churn()
     cluster_feats = df[['Mitglieder', 'Risikofaktor', 'Zusatzbeitrag_diff']]
@@ -227,9 +228,11 @@ def random_forest_regression():
         print(f"y_true = {y_test.iloc[i]:.1f}, y_pred = {y_pred[i]:.1f}, features = {input_features}")
 
 
-regression_fm()
-#def reg_full():
-#reg_fee_churn()
-#random_forest_regression()
-#reg_morb_fee_churn()
+
+if __name__ == "__main__":
+    regression_fm()
+    #def reg_full():
+    #reg_fee_churn()
+    #random_forest_regression()
+    #reg_morb_fee_churn()
 

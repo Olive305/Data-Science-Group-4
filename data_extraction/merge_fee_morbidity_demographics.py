@@ -66,11 +66,13 @@ def merge_fm_dm_sat():
     df_sat_23 = merge_execution(df_result, df_sat_23, "Name_sat_23",2023)
 
     df_sat_24 = sat_24()
-    df_sat_24 = merge_execution(df_result, df_sat_24, "Name_sat_24",2023)
+    df_sat_24 = merge_execution(df_result, df_sat_24, "Name_sat_24",2024)
 
     df_result = pd.concat([df_sat_24, df_sat_23], ignore_index=True)
 
     df_result = df_result.drop(columns=['Name_sat_24', 'Name_sat_23'])
     df_result = df_result.dropna(axis=1, how='all')
     write_excel(df_result, '../data/fm_dem_sat_merged.xlsx', index=False)
-merge_fm_dm_sat()
+
+if __name__ == "__main__":
+    merge_fm_dm_sat()

@@ -80,14 +80,12 @@ def extract_satisfaction(path, sheetname):
     return df_result
 
 def clean_demo(df):
-    """
+    # Drop 'Gesamt' column and irrelevant rows
+    df = df.drop(df.columns[1], axis=1)
+    df = df.drop([2, 3]).reset_index(drop=True)
+    df = df.iloc[:-2].reset_index(drop=True)
 
-    :param df:
-    :return:
-    """
-    df = df.drop(df.columns[1], axis=1)  # drops Gesamt
-    df = df.drop([2, 3]).reset_index(drop=True)  # drops n gesamt
-    df = df.iloc[:-2].reset_index(drop=True)  # drops weiß nicht and summe
+    # Generate combined column names from first two header rows
     prefixes = df.iloc[0]
     new_row = []
     current_prefix = None
@@ -95,18 +93,50 @@ def clean_demo(df):
     for i, val in enumerate(prefixes):
         if pd.notna(val):
             current_prefix = val
-        combined = f"{current_prefix}_{df.iat[1, i]}"
+        suffix = str(df.iat[1, i]) if pd.notna(df.iat[1, i]) else f"unk_{i}"
+        combined = f"{current_prefix}_{suffix}"
         new_row.append(combined)
 
+    # Apply new column names
     df.iloc[1] = new_row
-
     df = df.drop(index=0).reset_index(drop=True)
     df.columns = df.iloc[0]
     df = df.drop(index=0).reset_index(drop=True)
+
+    # Rename first column to 'Krankenkasse'
     cols = list(df.columns)
     cols[0] = 'Krankenkasse'
     df.columns = cols
+
+    # Drop columns that are entirely NaN or zero (invalid/unusable)
+    df = df.dropna(axis=1, how='all')
+
+    # --- Normalize grouped demographic columns ---
+    from collections import defaultdict
+    import numpy as np
+
+    prefix_groups = defaultdict(list)
+    for col in df.columns[1:]:
+        prefix = col.split('_')[0]
+        prefix_groups[prefix].append(col)
+
+    for prefix, group_cols in prefix_groups.items():
+        if len(group_cols) == 1:
+            continue  # nothing to normalize
+
+        sum_col = df[group_cols].sum(axis=1)
+        sum_col = sum_col.astype(float).replace(0, np.nan)
+
+        for col in group_cols:
+            df[col] = df[col] / sum_col
+
+        # Drop last column of group (e.g., residual bucket)
+        df = df.drop(columns=[group_cols[-1]])
+
     return df
+
+
+
 
 def find_demographics(df_demo):
     """
@@ -131,6 +161,7 @@ def find_demographics(df_demo):
         start_row = end + 1
     df_result.reset_index(drop=True, inplace=True)
     return df_result
+
 def find_demo_23():
     """
     runs the find_demographic() function using the Kundenmonitor 2023 data
@@ -184,5 +215,5 @@ def sat_24():
     """
     df = extract_satisfaction('../data/Kundenmonitor_GKV_2024.xlsx', 'Band')
     return df
-#print(sat_23())
+#print(find_demo_24())
 #print(sat_24())
