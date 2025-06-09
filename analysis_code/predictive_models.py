@@ -84,7 +84,7 @@ def data_cleanup(df):
     the change in Members for the next quarter as we expect people to switch AFTER
     the change not before it and thus this would only present in the quarter after the change occured
     """
-    df = df.dropna(subset=['Zusatzbeitrag_diff'])
+    df['Zusatzbeitrag_diff'] = df['Zusatzbeitrag_diff'].fillna(0)
     df = df.dropna(subset=['Mitglieder_diff_next'])
     df['ZB_mean'] = df.groupby('Date')['Zusatzbeitrag_diff'].transform('mean')
 
