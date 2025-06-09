@@ -100,6 +100,8 @@ def reg_fee_churn():
     df = load_excel('../data/Zusatzbeitrag_je Kasse je Quartal.xlsx')
     df = data_cleanup(df)
     linear_regression(df[['ZB_diff']], df['Mitglieder_diff_next'],"fee churn:")
+    df['Mitglieder_diff_next'] = df['Mitglieder_diff_next']/df['Mitglieder']
+    linear_regression(df[['ZB_diff']], df['Mitglieder_diff_next'], "fee churn:")
 
 def reg_morb_fee_churn():
     """
@@ -142,6 +144,9 @@ def regression_fm():
     df = reg_morb_fee_churn()
     print(df)
     linear_regression(df[['ZB_diff', 'Risikofaktor','Mitglieder','MGxRF','Versicherte']], df['Mitglieder_diff_next'], "morb_fee_churn:")
+    df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'] / df['Mitglieder']
+    linear_regression(df[['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Versicherte']], df['Mitglieder_diff_next'],
+                      "morb_fee_churn:")
 def clustering():
     df= reg_morb_fee_churn()
     cluster_feats = df[['Mitglieder', 'Risikofaktor', 'Zusatzbeitrag_diff']]
@@ -222,7 +227,7 @@ def random_forest_regression():
         print(f"y_true = {y_test.iloc[i]:.1f}, y_pred = {y_pred[i]:.1f}, features = {input_features}")
 
 
-#regression_fm()
+regression_fm()
 #def reg_full():
 #reg_fee_churn()
 #random_forest_regression()

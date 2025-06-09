@@ -1,6 +1,6 @@
 from data_extraction.utils import load_excel, column_name_cleanup
 import statsmodels.formula.api as smf
-
+#ZB_diff should be Zusatzbeitrag difference and other factors should be removed
 def run_panel_regression(df, dependent_var='Mitglieder_diff_next', treatment_var='ZB_diff', entity_var='Krankenkasse', time_var='Quartal'):
     """
     Runs a fixed-effects panel regression with lagged treatment effect:

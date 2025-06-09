@@ -1,21 +1,20 @@
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 from econml.dml import CausalForestDML
-from econml.cate_interpreter import SingleTreeCateInterpreter
-import matplotlib.pyplot as plt
+import joblib
+import os
 
 from data_extraction.utils import normalize_features
 
-
-def run_causal_forest(
+def prepare_data(
     filepath="../data/fm_dem_sat_merged.xlsx",
     treatment_col="ZB_diff",
     outcome_col="Mitglieder_diff_next",
-    plot_effects=True,
+    year_col="Jahr",
+    quarter_col="Quartal",
+    period_col="Date",
 ):
-    # Load data
     try:
         df = pd.read_excel(filepath)
     except FileNotFoundError:
@@ -23,73 +22,75 @@ def run_causal_forest(
         merge_fm_dm_sat()
         df = pd.read_excel(filepath)
 
-    # Fill missing numeric values with column medians
     df = df.fillna(df.median(numeric_only=True))
-
-    # Ensure all column names are strings
-    df.columns = df.columns.astype(str)
-
-    # Define treatment and outcome variables
+    exclude = {treatment_col, outcome_col, year_col, quarter_col, period_col}
+    X = df[[c for c in df.columns if c not in exclude]]
+    X = X.select_dtypes(include=[np.number])
+    X_normalized, scaler = normalize_features(X)
     T = df[treatment_col].values
     Y = df[outcome_col].values
 
-    # Use all numeric features except treatment and outcome
-    feature_cols = df.columns.difference([treatment_col, outcome_col]).tolist()
-    X = df[feature_cols]
-    X = X.select_dtypes(include=[np.number])
+    return X, X_normalized, T, Y, scaler
 
-    X, scaler = normalize_features(X)
-
-    # Train-test split
-    X_train, X_test, T_train, T_test, Y_train, Y_test = train_test_split(
-        X, T, Y, test_size=0.2, random_state=42
+def run_causal_forest_final(
+    filepath="../data/fm_dem_sat_merged.xlsx",
+    model_path="../models/causal_forest_full.pkl",
+    treatment_col="ZB_diff",
+    outcome_col="Mitglieder_diff_next",
+    year_col="Jahr",
+    quarter_col="Quartal",
+    period_col="Date",
+):
+    X, X_normalized, T, Y, scaler = prepare_data(
+        filepath=filepath,
+        treatment_col=treatment_col,
+        outcome_col=outcome_col,
+        year_col=year_col,
+        quarter_col=quarter_col,
+        period_col=period_col,
     )
 
-    # Initialize causal forest model
     model = CausalForestDML(
         model_y=RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42),
         model_t=RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42),
         discrete_treatment=False,
         random_state=42
     )
+    model.fit(Y, T, X=X_normalized)
 
-    # Fit model to data
-    model.fit(Y_train, T_train, X=X_train)
+    cates = model.effect(X_normalized)
+    cate_std = model.effect_interval(X_normalized)[1] - cates
+    mean_cate = np.round(np.mean(cates), 4)
+    mean_std = np.round(np.mean(cate_std), 4)
 
-    # Estimate Conditional Average Treatment Effects (CATE)
-    te_pred = model.effect(X_test)
+    model_bundle = {
+        "model": model,
+        "features": X.columns.tolist(),
+        "scaler": scaler,
+        "treatment_col": treatment_col,
+        "outcome_col": outcome_col,
+        "cate_mean": mean_cate,
+        "cate_std_mean": mean_std,
+        "feature_importance": model.feature_importances_,
+    }
 
-    # Output mean CATE
-    print("Mean estimated treatment effect (CATE):", np.mean(te_pred))
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    joblib.dump(model_bundle, model_path)
+    print(f"Full model bundle saved to: {model_path}")
+    print(f"Mean estimated treatment effect (CATE) per 1% change: {mean_cate}")
+    print(f"Mean standard deviation of CATE estimates: {mean_std}")
 
-    # Display feature importances for treatment effect heterogeneity
-    print("\nFeature importances (treatment effect heterogeneity):")
-    for name, imp in zip(X_train.columns, model.feature_importances_):
-        print(f"{name:30}: {imp:.4f}")
+    importances = pd.Series(model.feature_importances_, index=X.columns)
+    top_features = importances.sort_values(ascending=False).head(10)
+    print("\nTop 10 features for treatment effect heterogeneity:")
+    for feat, imp in top_features.items():
+        print(f"{feat:30}: {imp:.4f}")
 
-    # Visualize decision rules for heterogeneity (depth-2 tree)
-    interpreter = SingleTreeCateInterpreter(include_model_uncertainty=True, max_depth=2)
-    interpreter.interpret(model, X_test)
-    interpreter.plot()
+    return model_bundle
 
-    # Histogram of estimated treatment effects
-    if plot_effects:
-        plt.figure(figsize=(8, 5))
-        plt.hist(te_pred, bins=30, edgecolor="black")
-        plt.title("Distribution of Estimated Treatment Effects (CATE)")
-        plt.xlabel("Treatment Effect")
-        plt.ylabel("Frequency")
-        plt.grid(True)
-        plt.show()
-
-    return model, te_pred, scaler
-
-
-def ca_fo():
-
-    model, te_pred, scaler = run_causal_forest()
-    print("\nSample CATEs:", te_pred[:5])
-
+def get_trained_causal_forest():
+    return run_causal_forest_final()
 
 if __name__ == "__main__":
-    ca_fo()
+    bundle = get_trained_causal_forest()
+    print("Model training complete.")
