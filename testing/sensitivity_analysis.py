@@ -5,6 +5,9 @@ from econml.dml import CausalForestDML
 import os
 import joblib
 
+
+os.system("pip install pandas numpy scikit-learn econml openpyxl joblib")
+
 from data_extraction.utils import normalize_features
 
 def prepare_data(
