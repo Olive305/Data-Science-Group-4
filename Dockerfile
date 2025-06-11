@@ -1,6 +1,4 @@
-
 FROM python:3.10-slim
-
 
 WORKDIR /app
 
@@ -10,12 +8,9 @@ COPY analysis_code/ analysis_code/
 COPY data/ /data/
 COPY data_extraction/ data_extraction/
 COPY models/ models/
-COPY paper/ paper
-COPY testing/ testing
-
-
+COPY paper/ paper/
+COPY testing/ testing/
 
 ENV PYTHONPATH=/app
 
-
-CMD ["python", "testing/sensitivity_analysis.py"]
+ENTRYPOINT ["/bin/bash"]
