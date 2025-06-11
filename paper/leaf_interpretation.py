@@ -2,8 +2,16 @@ import pandas as pd
 import joblib
 from econml.cate_interpreter import SingleTreeCateInterpreter
 
+from data_extraction.utils import load_excel
+
+
 def prepare_data_with_scaler(filepath, feature_names, scaler):
-    df = pd.read_excel(filepath)
+    try:
+        df = load_excel(filepath)
+    except FileNotFoundError:
+        from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
+        merge_fm_dm_sat()
+        df = load_excel(filepath)
     df = df.fillna(df.median(numeric_only=True))
     X = df[feature_names]
     X_normalized = pd.DataFrame(scaler.transform(X), columns=feature_names)

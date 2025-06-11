@@ -16,7 +16,12 @@ def permutation_test_causal_forest(
     seed=42,
 ):
     np.random.seed(seed)
-    df = pd.read_excel(filepath)
+    try:
+        df = load_excel(filepath)
+    except FileNotFoundError:
+        from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
+        merge_fm_dm_sat()
+        df = load_excel(filepath)
     df = df.fillna(df.median(numeric_only=True))
 
     exclude = {treatment_col, outcome_col, year_col, quarter_col, period_col}

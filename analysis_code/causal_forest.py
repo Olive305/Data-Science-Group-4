@@ -6,7 +6,8 @@ import joblib
 import os
 from scipy import stats
 
-from data_extraction.utils import normalize_features
+from data_extraction.utils import normalize_features, load_excel
+
 
 def prepare_data(
     filepath="../data/fm_dem_sat_merged.xlsx",
@@ -17,11 +18,11 @@ def prepare_data(
     period_col="Date",
 ):
     try:
-        df = pd.read_excel(filepath)
+        df = load_excel(filepath)
     except FileNotFoundError:
         from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
         merge_fm_dm_sat()
-        df = pd.read_excel(filepath)
+        df = load_excel(filepath)
 
     df = df.fillna(df.median(numeric_only=True))
     exclude = {treatment_col, outcome_col, year_col, quarter_col, period_col}
@@ -77,7 +78,11 @@ def run_causal_forest_repeated(
     std_of_means = np.std(mean_cates, ddof=1)
     t_stat, p_value = stats.ttest_1samp(mean_cates, 0)
 
-    # Speichere das letzte Modell mit allem Drum und Dran (oder du kannst hier noch erweitern)
+    # Policy Value berechnen mit dem letzten Modell
+    final_cates = models[-1].effect(X_normalized)
+    policy = final_cates > 0  # Policy: Behandle nur, wenn positiver Effekt
+    policy_value = np.mean(Y[policy])
+
     model_bundle = {
         "model": models[-1],
         "features": X.columns.tolist(),
@@ -91,6 +96,7 @@ def run_causal_forest_repeated(
         "std_cates_all_seeds": std_cates,
         "t_stat": t_stat,
         "p_value": p_value,
+        "policy_value": policy_value,
     }
 
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
@@ -101,6 +107,7 @@ def run_causal_forest_repeated(
     print(f"Std deviation of mean CATEs over seeds: {std_of_means:.6f}")
     print(f"T-Test against zero: t = {t_stat:.3f}, p = {p_value:.3f}")
     print(f"Mean standard deviation of CATE estimates: {np.mean(std_cates):.6f}")
+    print(f"Policy Value (expected outcome from model policy): {policy_value:.6f}")
 
     importances = pd.Series(models[-1].feature_importances_, index=X.columns)
     top_features = importances.sort_values(ascending=False).head(10)
@@ -109,6 +116,7 @@ def run_causal_forest_repeated(
         print(f"{feat:30}: {imp:.4f}")
 
     return model_bundle
+
 
 
 def get_trained_causal_forest():
