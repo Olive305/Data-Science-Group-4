@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+from data_extraction.utils import load_excel
 def predict_membership_change_full(df, model_bundle, contrib_change):
     """
     Predict relative membership change per row in df after applying contribution change using trained CF model.
@@ -61,7 +61,7 @@ def cost_calculation(df, cost_per_age):
     return total_cost
 
 
-def revenue_calculation(df, base_contrib, contrib_increase):
+def revenue_calculation(df, base_contrib, contrib_increase, year=2023, insurance_name="AOK"):
     """
     Calculate revenue based on predicted members and contribution rate.
 
@@ -73,9 +73,15 @@ def revenue_calculation(df, base_contrib, contrib_increase):
     Returns:
     - float: Estimated total revenue
     """
-    contrib = base_contrib + contrib_increase
+    
+    df = load_excel("../data/Brutto_income_24_25.xlsx")
+    
+    # get the average brutto income from the df
+    avg_income = df.loc[(df["Krankenkasse"] == insurance_name) & (df["year"] == year), "income"].values[0]
+    
+    contrib = (base_contrib + contrib_increase) / 100
     total_members = df["predicted_members"].sum()
-    revenue = contrib * total_members
+    revenue = contrib * total_members * avg_income
     return revenue
 
 
