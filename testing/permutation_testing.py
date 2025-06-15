@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from econml.dml import CausalForestDML
-from data_extraction.utils import normalize_features
+from data_extraction.utils import normalize_features, load_excel
 from scipy import stats
 
 def permutation_test_causal_forest(

@@ -26,11 +26,13 @@ def simulate_demographic():
     return result
 def simulate_economy():
     """
-    simulates economy
+    simulates economy => Income distribution
     returns: float
     """
     growth_rate = np.random.normal(loc=0.02, scale=0.04) #growth of 2% with big variance to have bad years
     return 1+(growth_rate/4)
+
+
 def competitor_behavior():
     """
     Calculates average change in contribution rate over all insurers and
@@ -41,9 +43,10 @@ def competitor_behavior():
     df = df.sort_values(by=['Krankenkasse', 'Quartal'])
 
     df['Rate'] = df.groupby('Krankenkasse')['Zusatzbeitrag'].diff()
-    overall_mean = df['Rate'].mean()
-    overall_std = df['Rate'].std()
-
+    overall_mean = df.groupby('Krankenkasse')['Rate'].mean()
+    overall_mean = overall_mean.mean()+0.2
+    overall_std = df.groupby('Krankenkasse')['Rate'].std()
+    overall_std = overall_std.mean()*0.5
     growth_rate = np.random.normal(loc=overall_mean, scale=overall_std)
     return growth_rate
 
@@ -91,7 +94,9 @@ def monte(iterations, years):
             results.append(row)
 
     df = pd.DataFrame(results)
-    print(df)
+    #print(df)
     return df
-monte(3, 5)
+
+if __name__ == '__main__':
+    print(monte(3, 5))
 #print(competitor_behavior())
