@@ -12,7 +12,7 @@ import joblib
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from legacy.data_merging_with_satisfaction import merge_churn_with_satisfaction
-from analysis_code.predictive_models import reg_morb_fee_churn
+from data_extraction.data_merging import reg_morb_fee_churn
 
 MODEL_PATH = "neural_network_model.pt"
 SCALER_PATH = "neural_network_scaler.pkl"
