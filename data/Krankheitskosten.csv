@@ -1,17 +1,46 @@
 
-Krankheitskosten in Mio. &euro; für Deutschland. Gliederungsmerkmale: Jahre, Alter, Geschlecht, ICD-10
+Krankheitskosten je Einwohner in &euro; für Deutschland. Gliederungsmerkmale: Jahre, Alter, Geschlecht, ICD-10, Einrichtungen
 ****************************************************************************************************
 
 Diese Tabelle bezieht sich auf:
-;;"2020";;;"2015";
-;;"Insgesamt";"Männlich";"Weiblich";"Insgesamt";"Männlich";"Weiblich";
-"Alle Altersgruppen";"Alle Diagnosen";"431.804";"192.298";"239.507";"338.444";"149.409";"189.035";
-"        unter 15 Jahre";"Alle Diagnosen";"27.878";"15.014";"12.864";"23.860";"12.701";"11.159";
-"        15 bis unter 30 Jahre";"Alle Diagnosen";"32.985";"14.137";"18.848";"28.433";"12.161";"16.272";
-"        30 bis unter 45 Jahre";"Alle Diagnosen";"40.581";"16.979";"23.602";"32.499";"13.866";"18.633";
-"        45 bis unter 65 Jahre";"Alle Diagnosen";"108.607";"53.417";"55.190";"89.152";"43.853";"45.299";
-"        65 bis unter 85 Jahre";"Alle Diagnosen";"159.735";"74.491";"85.244";"122.158";"55.921";"66.237";
-"        85 Jahre und älter";"Alle Diagnosen";"62.018";"18.260";"43.758";"42.342";"10.908";"31.434";
+;"2020";
+;"Insgesamt";"Männlich";"Weiblich";
+"        Krankheitskosten je Einwohner insgesamt";"5.190";"4.690";"5.690";
+"        nach Krankheiten ...";"-";"-";"-";
+"          A00-B99 Bestimmte infektiöse und parasitäre Krankheiten";"90";"100";"80";
+"          C00-D48 Neubildungen";"530";"530";"520";
+"          D50-D90 Krankheiten des Blutes und der blutbildenden Organe sowie bestimmte Störungen mit Beteiligung des Immunsystems";"60";"70";"60";
+"          E00-E90 Endokrine, Ernährungs- und Stoffwechselkrankheiten";"210";"200";"220";
+"          F00-F99 Psychische und Verhaltensstörungen";"680";"540";"820";
+"          G00-G99 Krankheiten des Nervensystems";"280";"260";"300";
+"          H00-H59 Krankheiten des Auges und der Augenanhangsgebilde";"170";"140";"190";
+"          H60-H95 Krankheiten des Ohres und des Warzenfortsatzes";"40";"40";"40";
+"          I00-I99 Krankheiten des Kreislaufsystems";"680";"710";"650";
+"          J00-J99 Krankheiten des Atmungssystems";"230";"240";"210";
+"          K00-K93 Krankheiten des Verdauungssystems";"570";"550";"580";
+"          L00-L99 Krankheiten der Haut und der Unterhaut";"70";"70";"70";
+"          M00-M99 Krankheiten des Muskel-Skelett-Systems und des Bindegewebes";"500";"360";"640";
+"          N00-N99 Krankheiten des Urogenitalsystems";"170";"170";"170";
+"          O00-O99 Schwangerschaft, Geburt und Wochenbett";"70";"X";"140";
+"          P00-P96 Bestimmte Zustände, die ihren Ursprung in der Perinatalperiode haben";"30";"30";"20";
+"          Q00-Q99 Angeborene Fehlbildungen, Deformitäten und Chromosomenanomalien";"30";"30";"40";
+"          R00-R99 Symptome und abnorme klinische und Laborbefunde, die andernorts nicht klassifiziert sind";"270";"180";"360";
+"          S00-T98 Verletzungen, Vergiftungen und bestimmte andere Folgen äußerer Ursachen";"280";"250";"300";
+"          Z00-Z99 Faktoren, die den Gesundheitszustand beeinflussen und zur Inanspruchnahme des Gesundheitswesens führen";"230";"200";"260";
+"        nach Einrichtungen ...";"-";"-";"-";
+"          Gesundheitsschutz";"40";"30";"50";
+"          Ambulante Einrichtungen";"2.570";"2.260";"2.870";
+"          Stationäre / teilstationäre Einrichtungen";"1.980";"1.840";"2.120";
+"          Rettungsdienste";"80";"80";"80";
+"          Private Haushalte";"200";"180";"220";
+"          Verwaltung und sonstige Einrichtungen";"320";"290";"340";
+"        nach Alter ...";"-";"-";"-";
+"          Unter 15 Jahre";"2.440";"2.560";"2.310";
+"          15 Jahre bis unter 30 Jahre";"2.450";"2.020";"2.910";
+"          30 Jahre bis unter 45 Jahre";"2.570";"2.110";"3.040";
+"          45 Jahre bis unter 65 Jahre";"4.480";"4.400";"4.550";
+"          65 Jahre bis unter 85 Jahre";"10.150";"10.410";"9.930";
+"          85 Jahre und älter";"25.350";"22.210";"26.940";
 
 ****************************************************************************************************
 Fußnoten
@@ -19,7 +48,7 @@ Fußnoten
 
 
 ****************************************************************************************************
-Die Tabelle wurde am 01.06.2025 22:36 Uhr unter www.gbe-bund.de erstellt.
+Die Tabelle wurde am 13.06.2025 20:18 Uhr unter www.gbe-bund.de erstellt.
 ****************************************************************************************************
 
 Quelle(n):

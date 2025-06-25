@@ -11,6 +11,7 @@ def main():
               "Mixed Effects Model : mem\n"
               "Difference in Difference : did\n"
               "Panel Regression : plr\n"
+              "Monte Carlo for all insurers based on CF: mcf\n" 
               "exit : exit\n"
               "(Most models other than nn are currently trained when called this will change if all of the data is"
               "included but right now this makes sense for testing)"
@@ -19,6 +20,9 @@ def main():
         if choice == "eda":
             from data_extraction.exploratory_data_analysis import full_eda
             full_eda()
+        elif choice == 'mcf':
+            from paper.test import full_monte
+            full_monte()
         elif choice == "lr":
             from analysis_code.predictive_models import regression_fm
             regression_fm()

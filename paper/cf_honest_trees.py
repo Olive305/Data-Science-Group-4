@@ -33,6 +33,7 @@ def prepare_data(
 
     return df, X, X_normalized, T, Y, scaler
 
+
 def run_causal_forest_crossfit(
     filepath="../data/fm_dem_sat_merged.xlsx",
     model_path="../models/causal_forest_full_honest.pkl",
@@ -55,10 +56,11 @@ def run_causal_forest_crossfit(
         period_col=period_col,
     )
 
-    kf = KFold(n_splits=n_splits, shuffle=True, random_state=42)
+    #kf = KFold(n_splits=n_splits, shuffle=True, random_state=seeds)
     all_cates = []
 
     for seed in seeds:
+        kf = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
         for train_index, est_index in kf.split(X_normalized):
             X_train, T_train, Y_train = (
                 X_normalized.iloc[train_index],
@@ -68,10 +70,11 @@ def run_causal_forest_crossfit(
             X_est = X_normalized.iloc[est_index]
 
             model = CausalForest(
-                n_estimators=100,
-                min_samples_leaf=5,  # kleiner gesetzt wegen Fold-Größe
-                max_depth=10,
+                n_estimators=300,
+                min_samples_leaf=10,
+                max_depth=20,
                 honest=True,
+                max_features="sqrt",
                 random_state=seed,
             )
             model.fit(X_train, T_train.reshape(-1, 1), Y_train)
@@ -91,9 +94,24 @@ def run_causal_forest_crossfit(
         min_samples_leaf=5,
         max_depth=10,
         honest=True,
+        #max_features="sqrt",
         random_state=seeds[-1],
     )
     final_model.fit(X_normalized, T.reshape(-1, 1), Y)
+
+    # Calculate double robust scores (predicted effects)
+    dr_scores = final_model.predict(X_normalized)
+    policy = dr_scores > 0
+
+    # Flatten arrays to 1D for comparison
+    policy = policy.ravel()
+    treatment_bool = (T > 0).ravel()
+
+    if len(policy) != len(treatment_bool) or len(treatment_bool) != len(Y):
+        raise ValueError("Längen von policy, T und Y stimmen nicht überein.")
+
+    mask = (policy == treatment_bool)
+    policy_value = np.mean(Y[mask])
 
     model_bundle = {
         "model": final_model,
@@ -108,6 +126,7 @@ def run_causal_forest_crossfit(
         "std_cates_all": std_cates,
         "t_stat": t_stat,
         "p_value": p_value,
+        "policy_value": policy_value,
     }
 
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
@@ -118,6 +137,7 @@ def run_causal_forest_crossfit(
     print(f"Std deviation of mean CATEs over observations: {std_of_means:.6f}")
     print(f"T-Test against zero: t = {t_stat:.3f}, p = {p_value:.3f}")
     print(f"Mean standard deviation of CATE estimates across seeds/folds: {std_cates.mean():.6f}")
+    print(f"Policy Value (expected outcome from model policy): {policy_value:.6f}")
 
     importances = pd.Series(final_model.feature_importances_, index=X.columns)
     top_features = importances.sort_values(ascending=False).head(10)
