@@ -11,7 +11,6 @@ import os
 # Add the parent directory to sys.path so data_extraction can be imported
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from data_extraction.data_merging import reg_morb_fee_churn
 from data_extraction.utils import load_excel
 from scipy import stats
 
@@ -126,14 +125,20 @@ def reg_fee_churn():
 
 
 def regression_fm():
-    df = reg_morb_fee_churn()
+    try:
+        df = load_excel("../data/fm_dem_sat_merged.xlsx")
+    except FileNotFoundError:
+        from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
+        merge_fm_dm_sat()
+        df = load_excel("../data/fm_dem_sat_merged.xlsx")
+
     #print(df)
     linear_regression(df[['ZB_diff', 'Risikofaktor','Mitglieder','MGxRF','Versicherte']], df['Mitglieder_diff_next'], "morb_fee_churn:")
     #df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'] / df['Mitglieder']
     #linear_regression(df[['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Versicherte']], df['Mitglieder_diff_next'],
      #                 "morb_fee_churn:")
 def clustering():
-    df= reg_morb_fee_churn()
+    df= load_excel("../data/fm_dem_sat_merged.xlsx")
     cluster_feats = df[['Mitglieder', 'Risikofaktor', 'Zusatzbeitrag_diff']]
 
     scaler = StandardScaler()
@@ -149,7 +154,7 @@ def clustering():
                           sub['Mitglieder_diff_next'], name=f"Cluster {g}")
 
 def random_forest_regression():
-    df = reg_morb_fee_churn()
+    df = load_excel("../data/fm_dem_sat_merged.xlsx")
     features = ['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Family_Quote']
     X = df[features]
     y = df['Mitglieder_diff_next']

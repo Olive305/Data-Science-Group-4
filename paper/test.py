@@ -2,7 +2,7 @@ import joblib
 import pandas as pd
 from data_extraction.utils import load_excel
 from paper.monte_carlo import monte
-from model_outcome import optimize_contribution_in_df
+from paper.model_outcome import optimize_contribution_in_df
 from paper.monte_execution import simulate_income, simulate_demography
 
 
