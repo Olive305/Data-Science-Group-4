@@ -4,13 +4,16 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import numpy as np
 import random
+import sys
+import os
 
 
 # Add the parent directory to sys.path so data_extraction can be imported
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_extraction.data_merging import fuz_combine_fees_morbidity
 from data_extraction.utils import load_excel, write_excel
+from scipy import stats
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -59,11 +62,28 @@ def linear_regression(X, y, name, seeds=range(100)):
     print(f"Adj R²:    {np.mean(r2_adj_list):.4f} ± {np.std(r2_adj_list):.4f}")
     print(f"MSE:       {np.mean(mse_list):.4f} ± {np.std(mse_list):.4f}")
     print(f"Intercept: {np.mean(intercepts):.4f} ± {np.std(intercepts):.4f}")
-    print("Coefficients (mean ± std):")
+    k = len(seeds)
+    df = k - 1
+
+    print("Coefficients (mean ± std) and p-values:")
     for i, col in enumerate(X.columns):
-        mean_coef = np.mean(coefs[:, i])
-        std_coef = np.std(coefs[:, i])
-        print(f"  {col}: {mean_coef:.4f} ± {std_coef:.4f}")
+        vals = coefs[:, i]
+        mu, sigma = np.mean(vals), np.std(vals, ddof=1)
+        se = sigma / np.sqrt(k)
+        t_stat = mu / se if se != 0 else 0
+        p_val = 2 * (1 - stats.t.cdf(abs(t_stat), df)) if se != 0 else 1.0
+        print(f"  {col}: {mu:.4f} ± {sigma:.4f},   p = {p_val:.2e}")
+
+    # Overall model p-value using F-statistic
+    mean_r2 = np.mean(r2_list)
+    n = X.shape[0]
+    p = X.shape[1]
+    if mean_r2 < 1:
+        f_stat = (mean_r2 / (1 - mean_r2)) * ((n - p - 1) / p)
+        model_p = 1 - stats.f.cdf(f_stat, p, n - p - 1)
+        print(f"Overall model p-value: {model_p:.2e}")
+    else:
+        print("Overall model p-value: N/A")
 
 def data_cleanup(df):
     # combine Year and Quarter for easier calculations

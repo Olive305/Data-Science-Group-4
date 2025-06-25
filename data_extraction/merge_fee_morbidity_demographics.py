@@ -1,5 +1,9 @@
 import pandas as pd
 
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from analysis_code.predictive_models import regression_fm
 from data_extraction.create_matching_table import build_matching_23
 from data_extraction.data_extractor import find_demo_24, find_demo_23, sat_23, sat_24

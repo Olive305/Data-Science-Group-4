@@ -272,3 +272,13 @@ def get_full_income_df():
     
 if __name__ == "__main__":
     get_full_income_df()
+    
+
+"""
+Zuerst wurde das monatliches Haushaltsnettoeinkommen aus der Kundenmonitor_GKV Tabelle geholt. Es wurde auch die durchschnittliche Nummer von Menschen pro Haushalt dort geholt.
+Diese werte wurden nicht als durchschnittliche werte angegeben, sondern in ranges. Also wie viele angegeben haben wie viel zwischen 1000 und 1500 verdienen sozusagen.
+Beides wurde dann für jede Krankenkasse in einen durchschnittswert umgerechnet
+Dann wurde Nettoeinkommen durch Haushalt / Personen im Haushalt geteilt. (Mit der Annahme dass alle Personen eines Haushalts in der Selben krankenkasse versichert sind, wodurch sich Fehler durch Nichtverdiener im Haushalt ausgleichen)
+Die Nettoeinkommen pro Person wurden mit 1.4 multipliziert um die Bruttoeinkommen abzuschätzen
+Krankenkassen wo diese Werte nicht zur Verfügung standen, wurden die durchschnittlichen Bruttoeinkommen des jeweiligen Jahres (23, 24) in Deutschland verwendet (source: https://de.statista.com/statistik/daten/studie/161355/umfrage/monatliche-bruttoloehne-und-bruttogehaelter-pro-kopf-in-deutschland/)
+"""

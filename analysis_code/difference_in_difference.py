@@ -1,6 +1,8 @@
 import pandas as pd
 import statsmodels.formula.api as smf
-
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.utils import load_excel, column_name_cleanup
 
 

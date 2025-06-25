@@ -2,6 +2,13 @@ import pandas as pd
 import statsmodels.formula.api as smf
 from statsmodels.stats.multitest import multipletests
 from sklearn.preprocessing import StandardScaler
+import sys
+import os
+import numpy as np
+from scipy import stats
+
+# Add the parent directory to sys.path so data_extraction can be imported
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from data_extraction.utils import load_excel, write_excel, column_name_cleanup
 
@@ -33,8 +40,8 @@ def mem():
     #replacing the few NaNs with median of column
     try:
         df = df.fillna(df.median())
-    except Exception as e:
-        i =0 #this is supposed to do nothing :)
+    except Exception as _:
+        pass
 
     # Define independent and dependent variables
     iv = 'ZB_diff'  # Zusatzbeitragsänderung
@@ -91,6 +98,40 @@ def mem():
     # Sort by corrected p-value
     results_df = results_df.sort_values('p_adj', na_position='last')
     significant_moderators = results_df[(results_df['p_adj'].notna()) & (results_df['p_adj'] < 0.05)]
+    
+    # Print the coefficient for the independent variable (iv) to the dependent variable (dv)
+    print(f"Coefficient for {iv} -> {dv}: {result.params.get(iv, float('nan')):.4f}")
+
+    # --- assume `result` is your fitted mixedlm for one moderator ---
+    # 1) fit a null model (only random intercept):
+    null = smf.mixedlm(f"{dv} ~ 1",
+                    df,
+                    groups=df['Krankenkasse'],
+                    re_formula="~1").fit(reml=True)
+
+    # 2) likelihood‐ratio test (full vs null):
+    lr_stat = 2 * (result.llf - null.llf)
+    df_diff = result.df_modelwc - null.df_modelwc
+    p_value = stats.chi2.sf(lr_stat, df_diff)
+    print(f"Omnibus LRT: χ²={lr_stat:.2f}, Δdf={int(df_diff)}, p={p_value:.3e}")
+
+    # 3) variance components for pseudo‑R²:
+    #    a) variance of fixed‐effect predictions
+    var_fixed = np.var(result.fittedvalues)
+
+    #    b) sum of the random‐effect variances
+    #       (the diagonal elements of the random‐effects covariance)
+    var_random = np.sum(np.diag(result.cov_re))
+
+    #    c) residual variance  (sigma²)
+    var_resid = result.scale
+
+    # 4) Nakagawa R²:
+    marginal_R2   = var_fixed / (var_fixed + var_random + var_resid)
+    conditional_R2 = (var_fixed + var_random) / (var_fixed + var_random + var_resid)
+
+    print(f"Marginal R²:   {marginal_R2:.3f}")
+    print(f"Conditional R²:{conditional_R2:.3f}")
 
     #print("\nModerators sorted by FDR-corrected p-value:")
     #print(type(significant_moderators))
