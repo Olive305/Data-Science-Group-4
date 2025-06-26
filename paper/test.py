@@ -6,7 +6,7 @@ from paper.model_outcome import optimize_contribution_in_df
 from paper.monte_execution import simulate_income, simulate_demography
 
 
-def starting_point():
+def starting_point(is_did=False):
     df = load_excel('../data/fm_dem_sat_merged.xlsx')
     df = df.fillna(df.median(numeric_only=True))
     latest_rows = []
@@ -15,6 +15,8 @@ def starting_point():
         latest = df_kk[df_kk['Date'] == df_kk['Date'].max()].copy()
         latest_rows.append(latest)
     df_latest = pd.concat(latest_rows, ignore_index=True)
+    if is_did:
+        return df_latest.drop(columns=['Jahr', 'Quartal'])
     return df_latest.drop(columns=['Jahr', 'Quartal', 'Date'])
 
 

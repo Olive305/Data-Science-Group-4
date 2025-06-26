@@ -70,9 +70,9 @@ def run_causal_forest_crossfit(
             X_est = X_normalized.iloc[est_index]
 
             model = CausalForest(
-                n_estimators=300,
-                min_samples_leaf=10,
-                max_depth=20,
+                n_estimators=200,
+                min_samples_leaf=5,
+                max_depth=10,
                 honest=True,
                 max_features="sqrt",
                 random_state=seed,
@@ -90,11 +90,11 @@ def run_causal_forest_crossfit(
     t_stat, p_value = stats.ttest_1samp(mean_cates, 0)
 
     final_model = CausalForest(
-        n_estimators=100,
+        n_estimators=200,
         min_samples_leaf=5,
         max_depth=10,
         honest=True,
-        #max_features="sqrt",
+        max_features="sqrt",
         random_state=seeds[-1],
     )
     final_model.fit(X_normalized, T.reshape(-1, 1), Y)
