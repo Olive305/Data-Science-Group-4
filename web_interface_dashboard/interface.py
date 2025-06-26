@@ -9,6 +9,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.utils import load_excel
 from web_interface_dashboard.data_from_models import full_pred
+from web_interface_dashboard.data_from_models import pred_nn
 
 # Load insurer names
 insureres_name = load_excel("../data/matching_tabelle.xlsx")
@@ -52,12 +53,25 @@ def on_calculate_click(n_clicks, selected_insurers, fee_increase):
     if not n_clicks or not selected_insurers:
         # No output before first click
         return ""
-    # get predictions
+    # get predictions from full_pred
     df_preds = full_pred(insurers=selected_insurers, zb_diff=fee_increase)
+
+    # Import nn_pred here to avoid circular imports if any
+
+    # Get nn_pred values for each insurer
+    nn_results = []
+    for insurer in selected_insurers:
+        nn_value = pred_nn(insurer, zb_diff=fee_increase)
+        nn_results.append({'Insurer': insurer, 'Model': 'NN Model', 'Predicted Churn': nn_value})
+
+    # Prepare full_pred results in long format
     df_long = df_preds.reset_index().melt(
         id_vars='index', value_vars=df_preds.columns,
         var_name='Model', value_name='Predicted Churn'
     ).rename(columns={'index': 'Insurer'})
+
+    # Append nn_pred results
+    df_long = pd.concat([df_long, pd.DataFrame(nn_results)], ignore_index=True)
 
     fig = px.bar(
         df_long,
