@@ -10,6 +10,7 @@ from data_extraction.utils import column_name_cleanup, load_excel
 from paper.test import starting_point
 import statsmodels.api as sm
 import numpy as np
+from analysis_code.full_neural_network import train_and_save_neural_network
 
 def predict_data(df, insurer: str, zb_diff: float, modelpath: str) -> float:
     """
@@ -127,7 +128,9 @@ def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
     """
     Predict churn via the trained Neural Network.
     """
-    # Load necessary artifacts
+    # Load necessary artifacts, train and save if missing
+    if not (os.path.exists(SCALER_PATH) and os.path.exists(CATEGORICAL_COLS_PATH) and os.path.exists(SATISFACTION_COLS_PATH) and os.path.exists(MODEL_PATH)):
+        train_and_save_neural_network()
     scaler = joblib.load(SCALER_PATH)
     categorical_cols = joblib.load(CATEGORICAL_COLS_PATH)
     satisfaction_columns = joblib.load(SATISFACTION_COLS_PATH)
