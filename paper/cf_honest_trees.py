@@ -155,6 +155,9 @@ def run_causal_forest_crossfit(
     print(f"Policy Value (expected outcome from model policy): {policy_value:.6f}")
     print(f"Variance of predicted CATEs (model heterogeneity): {var_cate:.6f}")
     print(f"R² of outcome model (RegressionForest): {r2_outcome:.6f}")
+    print(f"  t-statistic = {t_stat:.4f}")
+    print(f"  p-value     = {p_value:.2e}")
+
 
     importances = pd.Series(final_model.feature_importances_, index=X.columns)
     top_features = importances.sort_values(ascending=False).head(10)
