@@ -11,8 +11,7 @@ import os
 # Add the parent directory to sys.path so data_extraction can be imported
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from data_extraction.data_merging import fuz_combine_fees_morbidity
-from data_extraction.utils import load_excel, write_excel
+from data_extraction.utils import load_excel
 from scipy import stats
 
 pd.set_option('display.max_rows', None)
@@ -124,52 +123,22 @@ def reg_fee_churn():
     df['Mitglieder_diff_next'] = df['Mitglieder_diff_next']/df['Mitglieder']
     linear_regression(df[['ZB_diff']], df['Mitglieder_diff_next'], "fee churn:")
 
-def reg_morb_fee_churn():
-    """
-    Preperation and call for the lin regression using the morbidity and contribution
-    -> removes all data that would otherwise ruin models
-
-    takes no parameters
-    calls upun data_cleanup(df)
-    calls upon linear_regression(X, y, name, seeds=range(100))
-    returns the df for further models
-    """
-    try:
-        df= load_excel('../data/morb_fee_merged.xlsx')
-    except FileNotFoundError:
-        fuz_combine_fees_morbidity()
-        df = load_excel("../data/morb_fee_merged.xlsx")
-
-    df = df.dropna(subset=['Zusatzbeitrag'])
-    df = data_cleanup(df)
-
-    #cleanup for when there is no data and thus -
-    df['Risikofaktor'] = (
-        df['Risikofaktor'].astype(str)
-        .str.replace('-', '1', regex=False)
-        .str.replace('–', '1', regex=False)
-    )
-    #convert back to float as the conversion was just for cleanup
-    df['Risikofaktor'] = pd.to_numeric(df['Risikofaktor'], errors='coerce')
-    #certain data points are 0 which makes no sense thus they are dropped
-    df = df[df['Risikofaktor'] != 0]
-    #drop the ones where there was no data for Risikofaktor
-    df = df.dropna(subset=['Risikofaktor'])
-    df['MGxRF']    = ((df['Mitglieder'] * df['Risikofaktor'])/4) #interactive term
-    df['Family_Quote'] = df['Versicherte']/df['Mitglieder']
-    #linear regression
-    write_excel(df,"../data/prepared_regression_fm.xlsx", index=False)
-    return(df)
 
 def regression_fm():
-    df = reg_morb_fee_churn()
+    try:
+        df = load_excel("../data/fm_dem_sat_merged.xlsx")
+    except FileNotFoundError:
+        from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
+        merge_fm_dm_sat()
+        df = load_excel("../data/fm_dem_sat_merged.xlsx")
+
     #print(df)
     linear_regression(df[['ZB_diff', 'Risikofaktor','Mitglieder','MGxRF','Versicherte']], df['Mitglieder_diff_next'], "morb_fee_churn:")
     #df['Mitglieder_diff_next'] = df['Mitglieder_diff_next'] / df['Mitglieder']
     #linear_regression(df[['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Versicherte']], df['Mitglieder_diff_next'],
      #                 "morb_fee_churn:")
 def clustering():
-    df= reg_morb_fee_churn()
+    df= load_excel("../data/fm_dem_sat_merged.xlsx")
     cluster_feats = df[['Mitglieder', 'Risikofaktor', 'Zusatzbeitrag_diff']]
 
     scaler = StandardScaler()
@@ -185,7 +154,7 @@ def clustering():
                           sub['Mitglieder_diff_next'], name=f"Cluster {g}")
 
 def random_forest_regression():
-    df = reg_morb_fee_churn()
+    df = load_excel("../data/fm_dem_sat_merged.xlsx")
     features = ['ZB_diff', 'Risikofaktor', 'Mitglieder', 'MGxRF', 'Family_Quote']
     X = df[features]
     y = df['Mitglieder_diff_next']

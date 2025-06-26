@@ -1,10 +1,11 @@
+import os
+import joblib
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from data_extraction.utils import load_excel, column_name_cleanup
-import pickle
-import os
+
 
 def load_data(panel_path: str = '../data/fm_dem_sat_merged.xlsx') -> pd.DataFrame:
     """
@@ -78,7 +79,7 @@ def run_metaregression(slopes_df: pd.DataFrame,
                        entity_var: str = 'Krankenkasse',
                        treatment_var: str = 'ZB_diff',
                        outcome_var: str = 'Mitglieder_diff_next',
-                       time_var: str = 'Date') -> sm.regression.linear_model.RegressionResultsWrapper:
+                       time_var: str = 'Date'):
     """
     Run an OLS metaregression of theta_i on all numeric feature means.
 
@@ -94,23 +95,28 @@ def run_metaregression(slopes_df: pd.DataFrame,
     """
     numeric = df_panel.select_dtypes(include=[np.number])
     agg = numeric.groupby(df_panel[entity_var]).mean().reset_index()
-    agg = agg.rename(columns={entity_var: entity_var})
-
     meta_df = pd.merge(slopes_df, agg, on=entity_var)
 
-    ignore_cols = [entity_var, 'theta_i', outcome_var, 'ZB_diff', 'Jahr', 'Quartal']
+    ignore_cols = [entity_var, 'theta_i', outcome_var, treatment_var, 'Jahr', 'Quartal']
     feature_cols = [col for col in meta_df.columns if col not in ignore_cols]
 
+    # Impute missing or infinite
     for col in feature_cols:
         median = meta_df[col].replace([np.inf, -np.inf], np.nan).median()
         meta_df[col] = meta_df[col].replace([np.inf, -np.inf], np.nan).fillna(median)
 
+    # Standardize
+    means = {}
+    stds = {}
     for col in feature_cols:
-        col_mean = meta_df[col].mean()
-        col_std = meta_df[col].std(ddof=0)
-        if col_std != 0:
-            meta_df[col] = (meta_df[col] - col_mean) / col_std
+        m = meta_df[col].mean()
+        s = meta_df[col].std(ddof=0)
+        if s != 0:
+            meta_df[col] = (meta_df[col] - m) / s
+        means[col] = m
+        stds[col] = s if s != 0 else 1.0
 
+    # Iterative feature selection
     current_features = feature_cols[:]
     while True:
         X = sm.add_constant(meta_df[current_features])
@@ -119,14 +125,15 @@ def run_metaregression(slopes_df: pd.DataFrame,
         pvalues = model.pvalues.drop('const', errors='ignore')
         max_pval = pvalues.max()
         if max_pval > 0.05:
-            worst_feature = pvalues.idxmax()
-            current_features.remove(worst_feature)
+            worst = pvalues.idxmax()
+            current_features.remove(worst)
         else:
             break
 
+    # Final fit
     X_final = sm.add_constant(meta_df[current_features])
-    meta_res_final = sm.OLS(y, X_final).fit()
-    return meta_res_final
+    meta_res_final = sm.OLS(meta_df['theta_i'], X_final).fit()
+    return meta_res_final, current_features, means, stds
 
 
 def main():
@@ -139,59 +146,22 @@ def main():
     print("First 5 random slopes:")
     print(slopes_df.head())
 
-    # Metaregression
-    numeric = df_panel.select_dtypes(include=[np.number])
-    agg = numeric.groupby(df_panel['Krankenkasse']).mean().reset_index()
-    meta_df = pd.merge(slopes_df, agg, on='Krankenkasse')
-
-    ignore_cols = ['Krankenkasse', 'theta_i', 'Mitglieder_diff_next', 'ZB_diff', 'Jahr', 'Quartal']
-    feature_cols = [col for col in meta_df.columns if col not in ignore_cols]
-
-    for col in feature_cols:
-        median = meta_df[col].replace([np.inf, -np.inf], np.nan).median()
-        meta_df[col] = meta_df[col].replace([np.inf, -np.inf], np.nan).fillna(median)
-
-    means = {}
-    stds = {}
-    for col in feature_cols:
-        mean = meta_df[col].mean()
-        std = meta_df[col].std(ddof=0)
-        if std != 0:
-            meta_df[col] = (meta_df[col] - mean) / std
-            means[col] = mean
-            stds[col] = std
-
-    current_features = feature_cols[:]
-    while True:
-        X = sm.add_constant(meta_df[current_features])
-        y = meta_df['theta_i']
-        model = sm.OLS(y, X).fit()
-        pvalues = model.pvalues.drop('const', errors='ignore')
-        max_pval = pvalues.max()
-        if max_pval > 0.05:
-            worst_feature = pvalues.idxmax()
-            current_features.remove(worst_feature)
-        else:
-            break
-
-    X_final = sm.add_constant(meta_df[current_features])
-    meta_res_final = sm.OLS(y, X_final).fit()
-
+    meta_res_final, features, means, stds = run_metaregression(slopes_df, df_panel)
     print("Metaregression Results (Reduced Model):")
     print(meta_res_final.summary())
 
-    model_data = {
+    # Save via joblib
+    os.makedirs("../models", exist_ok=True)
+    model_bundle = {
+        "slopes": slopes_df.set_index("Krankenkasse")["theta_i"].to_dict(),
         "model": meta_res_final,
-        "feature_names": current_features,
-        "means": {k: means.get(k, 0.0) for k in current_features},
-        "stds": {k: stds.get(k, 1.0) for k in current_features},
+        "features": features,
+        "means": means,
+        "stds": stds,
+        "add_constant": True
     }
-
-
-    with open("../models/metaregression_model.pkl", "wb") as f:
-        pickle.dump(model_data, f)
-
-
+    joblib.dump(model_bundle, "../models/metaregression_model.pkl")
+    print("Meta-regression model saved to ../models/metaregression_model.pkl")
 
 if __name__ == '__main__':
     main()
