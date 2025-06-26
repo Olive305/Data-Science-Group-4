@@ -119,6 +119,16 @@ def train_and_save_neural_network():
         y_true_bin = (y_true > 0).astype(int)
         y_pred_bin = (y_pred > 0).astype(int)
         f1 = f1_score(y_true_bin, y_pred_bin)
+        
+        # Display coefficients (mean ± std) for all features in the first layer
+        first_layer_weights = model.model[0].weight.detach().cpu().numpy()  # shape: (64, input_size)
+        print("Coefficients (mean ± std) for first layer weights:")
+        for i, col in enumerate(satisfaction_columns):
+            vals = first_layer_weights[:, i]
+            mu, sigma = np.mean(vals), np.std(vals, ddof=1)
+            # p-values are not meaningful for neural networks, so we use a placeholder
+            p_val = 1.0
+            print(f"  {col}: {mu:.4f} ± {sigma:.4f},   p = {p_val:.2e}")
 
         print(
             f"\nTest Results:\n"

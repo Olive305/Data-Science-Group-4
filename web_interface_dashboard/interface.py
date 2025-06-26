@@ -48,7 +48,7 @@ app.layout = html.Div(children=[
 def on_calculate_click(n_clicks, selected_insurers, fee_increase):
     if not n_clicks or not selected_insurers:
         return ""
-    #TODO calculate predicted churn Example: generate dummy churn values based on fee_increase
+    #TODO calculate predicted churn     Example: generate dummy churn values based on fee_increase
     predicted_churn = [min(0.05 + 0.01 * fee_increase, 1.0) for _ in selected_insurers]
 
     fig = px.bar(
