@@ -4,6 +4,7 @@ import torch
 import sys
 import os
 
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from analysis_code.full_neural_network import NeuralNetwork, MODEL_PATH, SCALER_PATH, CATEGORICAL_COLS_PATH, SATISFACTION_COLS_PATH
 from data_extraction.utils import column_name_cleanup, load_excel
@@ -72,7 +73,35 @@ def full_pred(insurers=['aokbadenwürttemberg'], zb_diff=0.1):
     # Prepare empty result
     methods = ['cf', 'lr', 'did', 'meta']
     df_result = pd.DataFrame(index=insurers, columns=methods, dtype=float)
-
+    print("Checking if models exist.")
+    try:
+        model_bundle = joblib.load('../models/causal_forest_full_honest.pkl')
+        print("Causal Forest loaded successfully.")
+    except FileNotFoundError:
+        print("Causal Forest model filenot found. Training new model...")
+        from paper.cf_honest_trees import run_causal_forest_crossfit
+        model_bundle = run_causal_forest_crossfit()
+    try:
+        model_bundle = joblib.load('../models/lin_regression_model.pkl')
+        print("Linear Regression loaded successfully.")
+    except FileNotFoundError:
+        print("Linear Regression model file not found. Training new model...")
+        from paper.cf_honest_trees import run_causal_forest_crossfit
+        model_bundle = run_causal_forest_crossfit()
+    try:
+        model_bundle = joblib.load('../models/did_stratified_model.pkl')
+        print("DiD loaded successfully.")
+    except FileNotFoundError:
+        print("DiD model file not found. Training new model...")
+        from paper.cf_honest_trees import run_causal_forest_crossfit
+        model_bundle = run_causal_forest_crossfit()
+    try:
+        model_bundle = joblib.load('../models/metaregression_model.pkl')
+        print("Metaregression loaded successfully.")
+    except FileNotFoundError:
+        print("Metregression model file not found. Training new model...")
+        from paper.cf_honest_trees import run_causal_forest_crossfit
+        model_bundle = run_causal_forest_crossfit()
     #Causal Forest
     for insurer in insurers:
         df = starting_point()
