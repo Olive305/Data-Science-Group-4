@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
-from econml.grf import CausalForest
+from econml.grf import CausalForest, RegressionForest
 import joblib
 import os
 from scipy import stats
+from sklearn.metrics import r2_score
 
 from data_extraction.utils import normalize_features
 
@@ -56,9 +57,9 @@ def run_causal_forest_crossfit(
         period_col=period_col,
     )
 
-    #kf = KFold(n_splits=n_splits, shuffle=True, random_state=seeds)
     all_cates = []
 
+    # Cross-fitting: Train multiple causal forests across different seeds and folds
     for seed in seeds:
         kf = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
         for train_index, est_index in kf.split(X_normalized):
@@ -81,6 +82,7 @@ def run_causal_forest_crossfit(
             cates = model.predict(X_est)
             all_cates.append(cates.reshape(-1, 1))
 
+    # Combine all predicted CATEs from cross-fits
     df_all = pd.DataFrame(np.hstack(all_cates))
     mean_cates = df_all.mean(axis=1)
     std_cates = df_all.std(axis=1)
@@ -89,6 +91,7 @@ def run_causal_forest_crossfit(
     std_of_means = mean_cates.std(ddof=1)
     t_stat, p_value = stats.ttest_1samp(mean_cates, 0)
 
+    # Final model trained on full data
     final_model = CausalForest(
         n_estimators=200,
         min_samples_leaf=5,
@@ -99,19 +102,28 @@ def run_causal_forest_crossfit(
     )
     final_model.fit(X_normalized, T.reshape(-1, 1), Y)
 
-    # Calculate double robust scores (predicted effects)
+    # Predict CATEs and derive policy based on positive effects
     dr_scores = final_model.predict(X_normalized)
     policy = dr_scores > 0
-
-    # Flatten arrays to 1D for comparison
     policy = policy.ravel()
     treatment_bool = (T > 0).ravel()
 
     if len(policy) != len(treatment_bool) or len(treatment_bool) != len(Y):
-        raise ValueError("Längen von policy, T und Y stimmen nicht überein.")
+        raise ValueError("Length mismatch: policy, treatment, and outcome.")
 
     mask = (policy == treatment_bool)
     policy_value = np.mean(Y[mask])
+
+    # ▶️ Model diagnostics:
+
+    # Variance of predicted CATEs – proxy for model heterogeneity detection
+    var_cate = np.var(dr_scores)
+
+    # R² of outcome model via RegressionForest – proxy for outcome explainability
+    rf = RegressionForest()
+    rf.fit(X_normalized, Y)
+    y_hat = rf.predict(X_normalized)
+    r2_outcome = r2_score(Y, y_hat)
 
     model_bundle = {
         "model": final_model,
@@ -127,17 +139,22 @@ def run_causal_forest_crossfit(
         "t_stat": t_stat,
         "p_value": p_value,
         "policy_value": policy_value,
+        "var_cate": var_cate,
+        "r2_outcome": r2_outcome,
     }
 
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     joblib.dump(model_bundle, model_path)
 
+    # ▶️ Output summary
     print(f"Honest causal forest model bundle saved to: {model_path}")
     print(f"Mean estimated treatment effect (CATE) averaged over folds and seeds: {mean_of_means:.6f}")
     print(f"Std deviation of mean CATEs over observations: {std_of_means:.6f}")
     print(f"T-Test against zero: t = {t_stat:.3f}, p = {p_value:.3f}")
     print(f"Mean standard deviation of CATE estimates across seeds/folds: {std_cates.mean():.6f}")
     print(f"Policy Value (expected outcome from model policy): {policy_value:.6f}")
+    print(f"Variance of predicted CATEs (model heterogeneity): {var_cate:.6f}")
+    print(f"R² of outcome model (RegressionForest): {r2_outcome:.6f}")
 
     importances = pd.Series(final_model.feature_importances_, index=X.columns)
     top_features = importances.sort_values(ascending=False).head(10)
