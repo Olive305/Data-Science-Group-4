@@ -1,7 +1,10 @@
 import joblib
 import pandas as pd
 import torch
+import sys
+import os
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from analysis_code.full_neural_network import NeuralNetwork, MODEL_PATH, SCALER_PATH, CATEGORICAL_COLS_PATH, SATISFACTION_COLS_PATH
 from data_extraction.utils import column_name_cleanup, load_excel
 from paper.test import starting_point
@@ -120,44 +123,50 @@ def full_pred(insurers=['aokbadenwürttemberg'], zb_diff=0.1):
     return df_result
 
 
-def pred_nn(insurer: str, zb_diff: float):
+def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
     """
     Predict churn via the trained Neural Network.
     """
-    # Get base row
+    # Load necessary artifacts
+    scaler = joblib.load(SCALER_PATH)
+    categorical_cols = joblib.load(CATEGORICAL_COLS_PATH)
+    satisfaction_columns = joblib.load(SATISFACTION_COLS_PATH)
+
+    # Load the dataset and filter for the specified insurer
     df = starting_point()
     row = df[df['Krankenkasse'] == insurer].copy()
     if row.empty:
-        raise ValueError(f"Insurer '{insurer}' not found")
+        raise ValueError(f"Insurer '{insurer}' not found in input data.")
+
+    # Set zb_diff and average values for other columns
     row['ZB_diff'] = zb_diff
+    for col in satisfaction_columns:
+        if col not in ['ZB_diff'] and col in df.columns:
+            row[col] = df[col].mean()
 
-    # Load artifacts
-    scaler = joblib.load(SCALER_PATH)
-    cat_cols = joblib.load(CATEGORICAL_COLS_PATH)
-    sat_cols = joblib.load(SATISFACTION_COLS_PATH)
+    # One-hot encode and ensure all columns exist
+    row = pd.get_dummies(row, columns=categorical_cols, drop_first=True)
+    missing_cols = [col for col in satisfaction_columns if col not in row.columns]
+    if missing_cols:
+        row = pd.concat([row, pd.DataFrame(0, index=row.index, columns=missing_cols)], axis=1)
 
-    #One-hot encode
-    row_enc = pd.get_dummies(row, columns=cat_cols, drop_first=True)
-    for c in sat_cols:
-        if c not in row_enc.columns:
-            row_enc[c] = 0
-    X_df = row_enc[sat_cols].astype(float)
+    # Prepare input data
+    X_input = row[satisfaction_columns].apply(pd.to_numeric, errors='coerce').fillna(0).values.astype(float)
+    X_input_scaled = scaler.transform(X_input)
+    X_input_tensor = torch.tensor(X_input_scaled, dtype=torch.float32)
 
-    # 4) Scale & tensorize
-    X_scaled = scaler.transform(X_df.values)
-    X_tensor = torch.tensor(X_scaled, dtype=torch.float32)
-
-    # 5) Load model & predict
-    model = NeuralNetwork(input_size=X_scaled.shape[1])
+    # Load the trained neural network model
+    input_size = X_input.shape[1]
+    model = NeuralNetwork(input_size)
     model.load_state_dict(torch.load(MODEL_PATH))
     model.eval()
+
+    # Perform prediction
     with torch.no_grad():
-        y_pred = model(X_tensor).item()
+        predictions = model(X_input_tensor).numpy().flatten()
 
-    # 6) Convert percent back to fraction
-    print(y_pred / 100.0)
-
+    return predictions[0] / 100
 
 
 if __name__ == '__main__':
-    print(full_pred())
+    print(pred_nn())
