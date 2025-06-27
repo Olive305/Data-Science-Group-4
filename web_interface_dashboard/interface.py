@@ -31,8 +31,6 @@ app.layout = html.Div([
         id='fee-increase-input',
         type='number',
         value=0,
-        min=0,
-        step=0.1
     ),
     html.Button('Calculate', id='calculate-btn', n_clicks=0, style={'marginLeft': '10px'}),
     # Loading wrapper around the output div
@@ -61,7 +59,10 @@ def on_calculate_click(n_clicks, selected_insurers, fee_increase):
     # Get nn_pred values for each insurer
     nn_results = []
     for insurer in selected_insurers:
-        nn_value = pred_nn(insurer, zb_diff=fee_increase)
+        try:
+            nn_value = pred_nn(insurer, zb_diff=fee_increase)
+        except Exception:
+            nn_value = 0
         nn_results.append({'Insurer': insurer, 'Model': 'NN Model', 'Predicted Churn': nn_value})
 
     # Prepare full_pred results in long format
