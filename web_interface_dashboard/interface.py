@@ -11,7 +11,6 @@ from paper.test import starting_point
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.utils import load_excel
 from web_interface_dashboard.data_from_models import full_pred
-from web_interface_dashboard.data_from_models import pred_nn
 
 # Load insurer names
 insureres_name = starting_point()
@@ -33,6 +32,8 @@ app.layout = html.Div([
         id='fee-increase-input',
         type='number',
         value=0,
+        min=0,
+        step=0.1
     ),
     html.Button('Calculate', id='calculate-btn', n_clicks=0, style={'marginLeft': '10px'}),
     # Loading wrapper around the output div

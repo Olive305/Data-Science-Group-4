@@ -151,7 +151,11 @@ def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
         df_result.loc[insurer, 'meta'] = slopes[insurer] * zb_diff
 
     for insurer in insurers:
-        df_result.loc[insurer, 'lr'] = pred_nn(insurer,zb_diff)
+        try:
+            df_result.loc[insurer, 'nn'] = pred_nn(insurer,zb_diff)
+        except KeyError:
+            df_result.loc[insurer, 'nn'] =0
+
     return df_result
 
 
@@ -198,12 +202,12 @@ def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
     # Perform prediction
     with torch.no_grad():
         predictions = model(X_input_tensor).numpy().flatten()
-    #print(row['Mitglieder'][0])
+    print(row['Mitglieder'].to_numpy()[0])
     #result = predictions[0]* row['Mitglieder']
-    return ((predictions[0]/100) *row['Mitglieder'][0])/100
+    return ((predictions[0]/100) *row['Mitglieder'].to_numpy()[0])/100
 
 
 
 if __name__ == '__main__':
-    #print(full_pred())
-    print(pred_nn('aokplus'))
+    print(full_pred(['aokbadenwürttemberg','aokplus']))
+    #print(pred_nn('aokplus'))

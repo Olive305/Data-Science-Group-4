@@ -51,8 +51,8 @@ def train_and_save_neural_network():
     # Select feature columns (excluding target columns)
     satisfaction_columns = df_merged.columns.difference(['Mitglieder_pct_change_next', 'Mitglieder_diff_next'])
     X_df = df_merged[satisfaction_columns].apply(pd.to_numeric, errors='coerce')
-    #X_df = X_df.dropna()
-    X_df = X_df.fillna(X_df.median(numeric_only=True))
+    X_df = X_df.dropna()
+
     # Prepare feature matrix X and target vector y
     X = X_df.values.astype(float)
     y = df_merged.loc[X_df.index, 'Mitglieder_pct_change_next'].values.reshape(-1, 1).astype(float)
@@ -119,7 +119,7 @@ def train_and_save_neural_network():
         y_true_bin = (y_true > 0).astype(int)
         y_pred_bin = (y_pred > 0).astype(int)
         f1 = f1_score(y_true_bin, y_pred_bin)
-        
+
         # Display coefficients (mean ± std) for all features in the first layer
         first_layer_weights = model.model[0].weight.detach().cpu().numpy()  # shape: (64, input_size)
         print("Coefficients (mean ± std) for first layer weights:")
