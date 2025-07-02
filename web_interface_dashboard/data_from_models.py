@@ -7,7 +7,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from analysis_code.full_neural_network import NeuralNetwork, MODEL_PATH, SCALER_PATH, CATEGORICAL_COLS_PATH, SATISFACTION_COLS_PATH
-from data_extraction.utils import column_name_cleanup, load_excel
+from data_extraction.utils import column_name_cleanup
 from paper.test import starting_point
 import statsmodels.api as sm
 import numpy as np
@@ -76,45 +76,45 @@ def full_pred(insurers=['aokbadenwürttemberg'], zb_diff=0.1):
     df_result = pd.DataFrame(index=insurers, columns=methods, dtype=float)
     print("Checking if models exist.")
     try:
-        model_bundle = joblib.load('./models/causal_forest_full_honest.pkl')
+        joblib.load(os.path.join('.', 'models', 'causal_forest_full_honest.pkl'))
         print("Causal Forest loaded successfully.")
     except FileNotFoundError:
         print("Causal Forest model file not found. Training new model...")
         from paper.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        run_causal_forest_crossfit()
     try:
-        model_bundle = joblib.load('./models/lin_regression_model.pkl')
+        joblib.load(os.path.join('.', 'models', 'lin_regression_model.pkl'))
         print("Linear Regression loaded successfully.")
     except FileNotFoundError:
         print("Linear Regression model file not found. Training new model...")
         from paper.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        run_causal_forest_crossfit()
     try:
-        model_bundle = joblib.load('./models/did_stratified_model.pkl')
+        joblib.load(os.path.join('.', 'models', 'did_stratified_model.pkl'))
         print("DiD loaded successfully.")
     except FileNotFoundError:
         print("DiD model file not found. Training new model...")
         from paper.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        run_causal_forest_crossfit()
     try:
-        model_bundle = joblib.load('./models/metaregression_model.pkl')
+        joblib.load(os.path.join('.', 'models', 'metaregression_model.pkl'))
         print("Metaregression loaded successfully.")
     except FileNotFoundError:
         print("Metregression model file not found. Training new model...")
         from paper.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        run_causal_forest_crossfit()
     #Causal Forest
     for insurer in insurers:
         df = starting_point()
         df_result.loc[insurer, 'cf'] = predict_data(
-            df, insurer, zb_diff, './models/causal_forest_full_honest.pkl'
+            df, insurer, zb_diff, os.path.join('.', 'models', 'causal_forest_full_honest.pkl')
         )
 
     #Linear Regression
     for insurer in insurers:
         df = starting_point()
         df_result.loc[insurer, 'lr'] = predict_data(
-            df, insurer, zb_diff, './models/lin_regression_model.pkl'
+            df, insurer, zb_diff, os.path.join('.', 'models', 'lin_regression_model.pkl')
         )
 
     #Stratified DiD
@@ -139,11 +139,11 @@ def full_pred(insurers=['aokbadenwürttemberg'], zb_diff=0.1):
         df_copy['treatment:post'] = df_copy['treatment'] * df['post']
 
         df_result.loc[insurer, 'did'] = predict_data(
-            df_copy, insurer, zb_diff, './models/did_stratified_model.pkl'
+            df_copy, insurer, zb_diff, os.path.join('.', 'models', 'did_stratified_model.pkl')
         )
 
     #Meta-Regression (use pre-stored slopes)
-    bundle = joblib.load("./models/metaregression_model.pkl")
+    bundle = joblib.load(os.path.join('.', 'models', 'metaregression_model.pkl'))
     slopes = bundle["slopes"]  # dict: { insurer: theta_i, ... }
     for insurer in insurers:
         if insurer not in slopes:
