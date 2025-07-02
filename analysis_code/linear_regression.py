@@ -1,11 +1,10 @@
 import numpy as np
-import pandas as pd
 from sklearn.model_selection import KFold
 from sklearn.metrics import mean_squared_error, r2_score
 import statsmodels.api as sm
 import joblib
 
-from paper.cf_honest_trees import prepare_data
+from analysis_code.cf_honest_trees import prepare_data
 
 def regression_fm_adj_r2(cv=5, model_path="../models/lin_regression_model.pkl"):
     """

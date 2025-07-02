@@ -136,7 +136,7 @@ def run_metaregression(slopes_df: pd.DataFrame,
     return meta_res_final, current_features, means, stds
 
 
-def main():
+def slope_meta():
     df_panel = load_data()
     mixed_res = fit_mixed_effects(df_panel)
     print("Mixed-Effects Model Results:")
@@ -164,4 +164,4 @@ def main():
     print("Meta-regression model saved to ../models/metaregression_model.pkl")
 
 if __name__ == '__main__':
-    main()
+    slope_meta()

@@ -5,9 +5,9 @@ import sys
 import os
 
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from analysis_code.full_neural_network import NeuralNetwork, MODEL_PATH, SCALER_PATH, CATEGORICAL_COLS_PATH, SATISFACTION_COLS_PATH
-from data_extraction.utils import column_name_cleanup, load_excel
+from data_extraction.utils import column_name_cleanup
 from paper.test import starting_point
 import statsmodels.api as sm
 import numpy as np
@@ -66,13 +66,13 @@ def predict_data(df, insurer: str, zb_diff: float, modelpath: str) -> float:
         pred = float(pred)
 
     return pred
-def full_pred(insurers=['aokbadenwürttemberg'], zb_diff=0.1):
+def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
     """
     Runs all four methods (CF, LR, DiD, Meta-regression) for each insurer
     and returns a DataFrame with insurers as rows and methods as columns.
     """
     # Prepare empty result
-    methods = ['cf', 'lr', 'did', 'meta']
+    methods = ['cf', 'lr', 'did', 'meta', 'nn']
     df_result = pd.DataFrame(index=insurers, columns=methods, dtype=float)
     print("Checking if models exist.")
     try:
@@ -80,28 +80,28 @@ def full_pred(insurers=['aokbadenwürttemberg'], zb_diff=0.1):
         print("Causal Forest loaded successfully.")
     except FileNotFoundError:
         print("Causal Forest model filenot found. Training new model...")
-        from paper.cf_honest_trees import run_causal_forest_crossfit
+        from analysis_code.cf_honest_trees import run_causal_forest_crossfit
         model_bundle = run_causal_forest_crossfit()
     try:
         model_bundle = joblib.load('../models/lin_regression_model.pkl')
         print("Linear Regression loaded successfully.")
     except FileNotFoundError:
         print("Linear Regression model file not found. Training new model...")
-        from paper.cf_honest_trees import run_causal_forest_crossfit
+        from analysis_code.cf_honest_trees import run_causal_forest_crossfit
         model_bundle = run_causal_forest_crossfit()
     try:
         model_bundle = joblib.load('../models/did_stratified_model.pkl')
         print("DiD loaded successfully.")
     except FileNotFoundError:
         print("DiD model file not found. Training new model...")
-        from paper.cf_honest_trees import run_causal_forest_crossfit
+        from analysis_code.cf_honest_trees import run_causal_forest_crossfit
         model_bundle = run_causal_forest_crossfit()
     try:
         model_bundle = joblib.load('../models/metaregression_model.pkl')
         print("Metaregression loaded successfully.")
     except FileNotFoundError:
         print("Metregression model file not found. Training new model...")
-        from paper.cf_honest_trees import run_causal_forest_crossfit
+        from analysis_code.cf_honest_trees import run_causal_forest_crossfit
         model_bundle = run_causal_forest_crossfit()
     #Causal Forest
     for insurer in insurers:
@@ -150,6 +150,8 @@ def full_pred(insurers=['aokbadenwürttemberg'], zb_diff=0.1):
             raise ValueError(f"Insurer '{insurer}' not found in slopes")
         df_result.loc[insurer, 'meta'] = slopes[insurer] * zb_diff
 
+    for insurer in insurers:
+        df_result.loc[insurer, 'lr'] = pred_nn(insurer,zb_diff)
     return df_result
 
 
@@ -196,9 +198,12 @@ def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
     # Perform prediction
     with torch.no_grad():
         predictions = model(X_input_tensor).numpy().flatten()
+    #print(row['Mitglieder'][0])
+    #result = predictions[0]* row['Mitglieder']
+    return ((predictions[0]/100) *row['Mitglieder'][0])/100
 
-    return predictions[0] / 100
 
 
 if __name__ == '__main__':
-    print(pred_nn())
+    #print(full_pred())
+    print(pred_nn('aokplus'))

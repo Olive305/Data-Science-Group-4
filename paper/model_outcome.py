@@ -26,7 +26,7 @@ def apply_contribution(df_q: pd.DataFrame, insurer: str, delta: float, col: str 
     df_q[col] = df_q[col].fillna(0.0)
     mask = df_q['Krankenkasse'] == insurer
     if not mask.any():
-        raise ValueError(f"Kasse {insurer!r} nicht gefunden")
+        raise ValueError(f"{insurer!r} not found")
     df_q.loc[mask, col] = delta
 
 

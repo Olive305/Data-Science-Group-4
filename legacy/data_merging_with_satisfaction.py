@@ -6,6 +6,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.data_merging import fuz_combine_fees_morbidity
 from data_extraction.utils import basic_data_cleanup
 from legacy.customer_data_extraction import process_excel_file
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', None)
 
 def kundenmonitor_extraction(year):
 
@@ -154,4 +158,4 @@ def merge_churn_with_satisfaction():
 
 
 if __name__ == "__main__":
-    merge_churn_with_satisfaction()
+    print(merge_churn_with_satisfaction())

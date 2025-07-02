@@ -6,7 +6,7 @@ import os
 from scipy import stats
 from sklearn.metrics import r2_score
 
-from data_extraction.utils import normalize_features
+from data_extraction.utils import normalize_features, load_excel
 
 
 def prepare_data(
@@ -18,11 +18,11 @@ def prepare_data(
     period_col="Date",
 ):
     try:
-        df = pd.read_excel(filepath)
+        df = load_excel(filepath)
     except FileNotFoundError:
         from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
         merge_fm_dm_sat()
-        df = pd.read_excel(filepath)
+        df = load_excel(filepath)
 
     df = df.fillna(df.median(numeric_only=True))
     exclude = {treatment_col, outcome_col, year_col, quarter_col, period_col}
@@ -160,10 +160,10 @@ def run_causal_forest_crossfit(
 
 
     importances = pd.Series(final_model.feature_importances_, index=X.columns)
-    top_features = importances.sort_values(ascending=False).head(10)
-    print("\nTop 10 features for treatment effect heterogeneity (honest):")
+    top_features = importances.sort_values(ascending=False)
+    print("\nTop features for treatment effect heterogeneity (honest):")
     for feat, imp in top_features.items():
-        print(f"{feat:30}: {imp:.4f}")
+        print(f"{feat:30}: {imp:.2e}")
 
     return model_bundle
 
