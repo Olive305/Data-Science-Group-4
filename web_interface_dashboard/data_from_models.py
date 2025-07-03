@@ -202,7 +202,7 @@ def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
     # Perform prediction
     with torch.no_grad():
         predictions = model(X_input_tensor).numpy().flatten()
-    print(row['Mitglieder'].to_numpy()[0])
+    #print(row['Mitglieder'].to_numpy()[0])
     #result = predictions[0]* row['Mitglieder']
     return ((predictions[0]/100) *row['Mitglieder'].to_numpy()[0])/100
 

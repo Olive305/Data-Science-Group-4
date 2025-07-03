@@ -148,12 +148,10 @@ def run_causal_forest_crossfit(
 
     # ▶️ Output summary
     print(f"Honest causal forest model bundle saved to: {model_path}")
-    print(f"Mean estimated treatment effect (CATE) averaged over folds and seeds: {mean_of_means:.6f}")
     print(f"Std deviation of mean CATEs over observations: {std_of_means:.6f}")
     print(f"T-Test against zero: t = {t_stat:.3f}, p = {p_value:.3f}")
     print(f"Mean standard deviation of CATE estimates across seeds/folds: {std_cates.mean():.6f}")
     print(f"Policy Value (expected outcome from model policy): {policy_value:.6f}")
-    print(f"Variance of predicted CATEs (model heterogeneity): {var_cate:.6f}")
     print(f"R² of outcome model (RegressionForest): {r2_outcome:.6f}")
     print(f"  t-statistic = {t_stat:.4f}")
     print(f"  p-value     = {p_value:.2e}")

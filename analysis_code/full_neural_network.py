@@ -9,10 +9,15 @@ from sklearn.metrics import f1_score
 import torch.nn as nn
 import torch.optim as optim
 import joblib
+pd.set_option('display.max_rows', None)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+pd.set_option('display.max_colwidth', None)
+from data_extraction.utils import load_excel
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from legacy.data_merging_with_satisfaction import merge_churn_with_satisfaction
-from data_extraction.data_merging import reg_morb_fee_churn
+#from legacy.data_merging_with_satisfaction import merge_churn_with_satisfaction
+#from data_extraction.data_merging import reg_morb_fee_churn
 
 MODEL_PATH = "neural_network_model.pt"
 SCALER_PATH = "neural_network_scaler.pkl"
@@ -41,11 +46,16 @@ class NeuralNetwork(nn.Module):
 def train_and_save_neural_network():
     # --- Data Preparation ---
     # Run any required preprocessing from other modules
-    reg_morb_fee_churn()
-    df_merged = merge_churn_with_satisfaction()
-
+    #reg_morb_fee_churn()
+    #df_merged = merge_churn_with_satisfaction()
+    #data load and prep
+    df_merged = load_excel("../data/fm_dem_sat_merged.xlsx")
+    df_merged['Mitglieder_pct_change_next']= (df_merged['Mitglieder_diff_next']/df_merged['Mitglieder'])
+    df_merged['RF-Entwicklung im Vgl zum Vorjahr'] = df_merged['RF-Entwicklung im Vgl zum Vorjahr'].replace('-', 0).astype(float)
+    df_merged = df_merged.fillna(df_merged.median(numeric_only=True))
     # Identify categorical columns and one-hot encode them
     categorical_cols = df_merged.select_dtypes(include=['object', 'category']).columns.tolist()
+    #print(categorical_cols)
     df_merged = pd.get_dummies(df_merged, columns=categorical_cols, drop_first=True)
 
     # Select feature columns (excluding target columns)
@@ -63,6 +73,7 @@ def train_and_save_neural_network():
         ~np.isinf(X).any(axis=1) & ~np.isinf(y).any(axis=1)
     )
     X = X[valid_indices]
+
     y = y[valid_indices]
 
     # --- Train/Test Split and Scaling ---
