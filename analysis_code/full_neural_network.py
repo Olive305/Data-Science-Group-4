@@ -20,10 +20,10 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 #from legacy.data_merging_with_satisfaction import merge_churn_with_satisfaction
 #from data_extraction.data_merging import reg_morb_fee_churn
 
-MODEL_PATH = "neural_network_model.pt"
-SCALER_PATH = "neural_network_scaler.pkl"
-CATEGORICAL_COLS_PATH = "neural_network_categorical_cols.pkl"
-SATISFACTION_COLS_PATH = "neural_network_satisfaction_cols.pkl"
+MODEL_PATH = "../models/neural_network_model.pt"
+SCALER_PATH = "../models/neural_network_scaler.pkl"
+CATEGORICAL_COLS_PATH = "../models/neural_network_categorical_cols.pkl"
+SATISFACTION_COLS_PATH = "../models/neural_network_satisfaction_cols.pkl"
 
 class NeuralNetwork(nn.Module):
     def __init__(self, input_size):

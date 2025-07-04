@@ -155,11 +155,11 @@ def run_causal_forest_repeated_warm_start(
     # For robustness and heterogeneity metrics: all CATEs of final models on the *entire dataset*
     all_cates_array_final_models = np.vstack([model.effect(normalize_features(X_full_numeric)[0]) for model in final_models_per_seed]).T
 
-    # 1) Std of mean CATEs over observations (effect heterogeneity)
+    # Std of mean CATEs over observations (effect heterogeneity)
     mean_cates_per_obs = np.mean(all_cates_array_final_models, axis=1)
     std_of_mean_cates_over_obs = np.std(mean_cates_per_obs, ddof=1)
 
-    # 2) Mean std of CATEs over seeds per observation (robustness of estimate)
+    # Mean std of CATEs over seeds per observation (robustness of estimate)
     std_cates_per_obs = np.std(all_cates_array_final_models, axis=1, ddof=1)
     mean_std_cates_across_obs = np.mean(std_cates_per_obs)
 

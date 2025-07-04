@@ -146,7 +146,7 @@ def run_causal_forest_crossfit(
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     joblib.dump(model_bundle, model_path)
 
-    # ▶️ Output summary
+    #Output summary
     print(f"Honest causal forest model bundle saved to: {model_path}")
     print(f"Std deviation of mean CATEs over observations: {std_of_means:.6f}")
     print(f"T-Test against zero: t = {t_stat:.3f}, p = {p_value:.3f}")

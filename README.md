@@ -15,13 +15,14 @@ Code an data of the paper:
 
 ## Explanation of the folder structure
 
-- `project` contains the code specifically for the project 
+- `paper` contains the code specifically for the paper
 - `analysis_code` contains all the code, which results were used in the final paper
 - `data` contains all the used data
 - `data_extraction` contains all the code to extract the data
-- `experimental_code` stores code used for testing and trying stuff
 - `web_interface_dashboard` contains the code for the final dashboard
 - `legacy` contains code no longer in use
+- `testing` contains code related to the CF testing/validation
+- `models` contains the models
 
 ## Using the Pipenv environment (currently not up to date please use the alternative way explained below)
 
