@@ -12,6 +12,7 @@ def main():
               "Difference in Difference : did\n"
               "Panel Regression : plr\n"
               "Monte Carlo for all insurers based on CF: mcf\n" 
+              "Explore the predictions in the webapp: webapp"
               "exit : exit\n"
               "(Most models other than nn are currently trained when called this will change if all of the data is"
               "included but right now this makes sense for testing)"
