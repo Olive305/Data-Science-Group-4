@@ -6,9 +6,9 @@ import plotly.express as px
 import sys
 import os
 
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from paper.test import starting_point
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from data_extraction.utils import load_excel
 from web_interface_dashboard.data_from_models import full_pred
 

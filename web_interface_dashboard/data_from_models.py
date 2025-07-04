@@ -106,9 +106,14 @@ def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
     #Causal Forest
     for insurer in insurers:
         df = starting_point()
-        df_result.loc[insurer, 'cf'] = predict_data(
-            df, insurer, zb_diff, '../models/causal_forest_full_honest.pkl'
-        )
+        try:
+            df_result.loc[insurer, 'cf'] = predict_data(
+                df, insurer, zb_diff, '../models/causal_forest_full_honest.pkl'
+            )
+        except Exception:
+            df_result.loc[insurer, 'cf'] = predict_data(
+                df, insurer, zb_diff, './models/causal_forest_full_honest.pkl'
+            )
 
     #Linear Regression
     for insurer in insurers:

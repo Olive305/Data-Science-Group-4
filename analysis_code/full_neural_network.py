@@ -14,6 +14,7 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.width', None)
 pd.set_option('display.max_colwidth', None)
 from data_extraction.utils import load_excel
+from scipy import stats
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 #from legacy.data_merging_with_satisfaction import merge_churn_with_satisfaction
@@ -131,15 +132,16 @@ def train_and_save_neural_network():
         y_pred_bin = (y_pred > 0).astype(int)
         f1 = f1_score(y_true_bin, y_pred_bin)
 
-        # Display coefficients (mean ± std) for all features in the first layer
-        first_layer_weights = model.model[0].weight.detach().cpu().numpy()  # shape: (64, input_size)
-        print("Coefficients (mean ± std) for first layer weights:")
-        for i, col in enumerate(satisfaction_columns):
-            vals = first_layer_weights[:, i]
-            mu, sigma = np.mean(vals), np.std(vals, ddof=1)
-            # p-values are not meaningful for neural networks, so we use a placeholder
-            p_val = 1.0
-            print(f"  {col}: {mu:.4f} ± {sigma:.4f},   p = {p_val:.2e}")
+        # Give coefficients here
+        # --- Coefficient Estimation for ZB_diff ---
+        zb_diff_index = list(satisfaction_columns).index('ZB_diff')
+        zb_values = X_test[:, zb_diff_index].reshape(-1, 1)
+        zb_values = stats.zscore(zb_values)  # ensure it's standardized
+
+        slope, intercept, r_value, p_value, std_err = stats.linregress(zb_values.flatten(), y_pred)
+        print(f"\nEstimated Coefficient for ZB_diff: {slope:.4f}")
+        print(f"P-value for ZB_diff coefficient: {p_value:.4g}")
+
 
         print(
             f"\nTest Results:\n"
