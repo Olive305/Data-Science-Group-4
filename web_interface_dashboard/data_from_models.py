@@ -213,7 +213,8 @@ def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
             df_result.loc[insurer, 'nn'] = pred_nn(insurer,zb_diff)
         except KeyError:
             print("KeyError")
-            print(insurer)
+            print("If this happens you most likely have to start the webapp trhough the file as doing it\n"
+                  "through main can cause routing issues")
             df_result.loc[insurer, 'nn'] =0
 
     return df_result
