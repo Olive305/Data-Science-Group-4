@@ -10,11 +10,12 @@ def main():
               "Causal Forest : cf\n"
               "Mixed Effects Model : mem\n"
               "Difference in Difference : did\n"
+              "Metaregression : meta\n"
               "Panel Regression : plr\n"
               "Monte Carlo for all insurers based on CF: mcf\n" 
-              "Explore the predictions in the webapp: webapp"
+              "Explore the predictions in the webapp: webapp\n"
               "exit : exit\n"
-              "(Most models other than nn are currently trained when called this will change if all of the data is"
+              "(Most models other than nn are currently trained when called this will change if all of the data is\n"
               "included but right now this makes sense for testing)"
               )
         choice = input("Enter: ").strip().lower()
@@ -24,6 +25,9 @@ def main():
         elif choice == 'mcf':
             from paper.test import full_monte
             full_monte()
+        elif choice == 'meta':
+            from analysis_code.heterogeneous_treatment_pipeline import slope_meta
+            slope_meta()
         elif choice == "lr":
             from analysis_code.linear_regression import regression_fm_adj_r2
             regression_fm_adj_r2(cv=5)

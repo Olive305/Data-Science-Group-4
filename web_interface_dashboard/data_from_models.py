@@ -66,6 +66,64 @@ def predict_data(df, insurer: str, zb_diff: float, modelpath: str) -> float:
         pred = float(pred)
 
     return pred
+
+
+def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
+    """
+    Predict churn via the trained Neural Network.
+    """
+    print("predicting churn via the trained Neural Network...")
+    # Load necessary artifacts, train and save if missing
+    if not (os.path.exists(SCALER_PATH) and os.path.exists(CATEGORICAL_COLS_PATH) and os.path.exists(SATISFACTION_COLS_PATH) and os.path.exists(MODEL_PATH)):
+        print("Model has to be trained.")
+        train_and_save_neural_network()
+    scaler = joblib.load(SCALER_PATH)
+    categorical_cols = joblib.load(CATEGORICAL_COLS_PATH)
+    satisfaction_columns = joblib.load(SATISFACTION_COLS_PATH)
+    print("loading worked")
+    # Load the dataset and filter for the specified insurer
+    df = starting_point()
+    row = df[df['Krankenkasse'] == insurer].copy()
+    if row.empty:
+        raise ValueError(f"Insurer '{insurer}' not found in input data.")
+
+    # Set zb_diff and average values for other columns
+    row['ZB_diff'] = zb_diff
+    """
+    print(row)
+    for col in satisfaction_columns:
+        if col not in ['ZB_diff'] and col in df.columns:
+            row[col] = df[col].mean()
+    """
+
+    # One-hot encode and ensure all columns exist
+    row = pd.get_dummies(row, columns=categorical_cols, drop_first=True)
+    missing_cols = [col for col in satisfaction_columns if col not in row.columns]
+    if missing_cols:
+        row = pd.concat([row, pd.DataFrame(0, index=row.index, columns=missing_cols)], axis=1)
+
+    # Prepare input data
+    X_input = row[satisfaction_columns].apply(pd.to_numeric, errors='coerce').fillna(0).values.astype(float)
+    X_input_scaled = scaler.transform(X_input)
+    X_input_tensor = torch.tensor(X_input_scaled, dtype=torch.float32)
+
+    # Load the trained neural network model
+    input_size = X_input.shape[1]
+    model = NeuralNetwork(input_size)
+    model.load_state_dict(torch.load(MODEL_PATH))
+    model.eval()
+
+    # Perform prediction
+    with torch.no_grad():
+        predictions = model(X_input_tensor).numpy().flatten()
+    #print(row['Mitglieder'].to_numpy()[0])
+    #print(predictions[0]/100)
+    print("done")
+    return ((predictions[0]/100) *row['Mitglieder'].to_numpy()[0])/100
+
+
+
+
 def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
     """
     Runs all four methods (CF, LR, DiD, Meta-regression) for each insurer
@@ -76,33 +134,33 @@ def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
     df_result = pd.DataFrame(index=insurers, columns=methods, dtype=float)
     print("Checking if models exist.")
     try:
-        model_bundle = joblib.load('../models/causal_forest_full_honest.pkl')
+        joblib.load('../models/causal_forest_full_honest.pkl')
         print("Causal Forest loaded successfully.")
     except FileNotFoundError:
         print("Causal Forest model filenot found. Training new model...")
         from analysis_code.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        run_causal_forest_crossfit()
     try:
-        model_bundle = joblib.load('../models/lin_regression_model.pkl')
+        joblib.load('../models/lin_regression_model.pkl')
         print("Linear Regression loaded successfully.")
     except FileNotFoundError:
         print("Linear Regression model file not found. Training new model...")
-        from analysis_code.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        from analysis_code.linear_regression import regression_fm_adj_r2
+        regression_fm_adj_r2(cv=5)
     try:
-        model_bundle = joblib.load('../models/did_stratified_model.pkl')
+        joblib.load('../models/did_stratified_model.pkl')
         print("DiD loaded successfully.")
     except FileNotFoundError:
         print("DiD model file not found. Training new model...")
-        from analysis_code.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        from analysis_code.difference_in_difference import did
+        did()
     try:
-        model_bundle = joblib.load('../models/metaregression_model.pkl')
+        joblib.load('../models/metaregression_model.pkl')
         print("Metaregression loaded successfully.")
     except FileNotFoundError:
         print("Metregression model file not found. Training new model...")
-        from analysis_code.cf_honest_trees import run_causal_forest_crossfit
-        model_bundle = run_causal_forest_crossfit()
+        from analysis_code.heterogeneous_treatment_pipeline import slope_meta
+        slope_meta()
     #Causal Forest
     for insurer in insurers:
         df = starting_point()
@@ -154,60 +212,13 @@ def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
         try:
             df_result.loc[insurer, 'nn'] = pred_nn(insurer,zb_diff)
         except KeyError:
+            print("KeyError")
+            print(insurer)
             df_result.loc[insurer, 'nn'] =0
 
     return df_result
 
 
-def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
-    """
-    Predict churn via the trained Neural Network.
-    """
-    # Load necessary artifacts, train and save if missing
-    if not (os.path.exists(SCALER_PATH) and os.path.exists(CATEGORICAL_COLS_PATH) and os.path.exists(SATISFACTION_COLS_PATH) and os.path.exists(MODEL_PATH)):
-        train_and_save_neural_network()
-    scaler = joblib.load(SCALER_PATH)
-    categorical_cols = joblib.load(CATEGORICAL_COLS_PATH)
-    satisfaction_columns = joblib.load(SATISFACTION_COLS_PATH)
-
-    # Load the dataset and filter for the specified insurer
-    df = starting_point()
-    row = df[df['Krankenkasse'] == insurer].copy()
-    if row.empty:
-        raise ValueError(f"Insurer '{insurer}' not found in input data.")
-
-    # Set zb_diff and average values for other columns
-    row['ZB_diff'] = zb_diff
-    """
-    print(row)
-    for col in satisfaction_columns:
-        if col not in ['ZB_diff'] and col in df.columns:
-            row[col] = df[col].mean()
-    """
-
-    # One-hot encode and ensure all columns exist
-    row = pd.get_dummies(row, columns=categorical_cols, drop_first=True)
-    missing_cols = [col for col in satisfaction_columns if col not in row.columns]
-    if missing_cols:
-        row = pd.concat([row, pd.DataFrame(0, index=row.index, columns=missing_cols)], axis=1)
-
-    # Prepare input data
-    X_input = row[satisfaction_columns].apply(pd.to_numeric, errors='coerce').fillna(0).values.astype(float)
-    X_input_scaled = scaler.transform(X_input)
-    X_input_tensor = torch.tensor(X_input_scaled, dtype=torch.float32)
-
-    # Load the trained neural network model
-    input_size = X_input.shape[1]
-    model = NeuralNetwork(input_size)
-    model.load_state_dict(torch.load(MODEL_PATH))
-    model.eval()
-
-    # Perform prediction
-    with torch.no_grad():
-        predictions = model(X_input_tensor).numpy().flatten()
-    #print(row['Mitglieder'].to_numpy()[0])
-    #print(predictions[0]/100)
-    return ((predictions[0]/100) *row['Mitglieder'].to_numpy()[0])/100
 
 
 

@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from paper.test import starting_point
 
 from data_extraction.utils import load_excel
-from web_interface_dashboard.data_from_models import full_pred
+from web_interface_dashboard.data_from_models import full_pred,pred_nn
 
 # Load insurer names
 insureres_name = starting_point()
@@ -99,4 +99,4 @@ def on_calculate_click(n_clicks, selected_insurers, fee_increase):
 def webapp():
     app.run(debug=False)
 if __name__ == '__main__':
-    app.run(debug=True)
+    webapp()
