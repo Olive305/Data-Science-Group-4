@@ -118,9 +118,14 @@ def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
     #Linear Regression
     for insurer in insurers:
         df = starting_point()
-        df_result.loc[insurer, 'lr'] = predict_data(
-            df, insurer, zb_diff, '../models/lin_regression_model.pkl'
-        )
+        try:
+            df_result.loc[insurer, 'lr'] = predict_data(
+                df, insurer, zb_diff, '../models/lin_regression_model.pkl'
+            )
+        except Exception:
+            df_result.loc[insurer, 'lr'] = predict_data(
+                df, insurer, zb_diff, './models/lin_regression_model.pkl'
+            )
 
     #Stratified DiD
     for insurer in insurers:
@@ -142,13 +147,20 @@ def full_pred(insurers=['aokbadenwürttemberg','aokplus'], zb_diff=0.1):
         df = column_name_cleanup(df)
         df_copy = df.copy()
         df_copy['treatment:post'] = df_copy['treatment'] * df['post']
-
-        df_result.loc[insurer, 'did'] = predict_data(
-            df_copy, insurer, zb_diff, '../models/did_stratified_model.pkl'
-        )
+        try:
+            df_result.loc[insurer, 'did'] = predict_data(
+                df_copy, insurer, zb_diff, '../models/did_stratified_model.pkl'
+            )
+        except Exception:
+            df_result.loc[insurer, 'did'] = predict_data(
+                df_copy, insurer, zb_diff, './models/did_stratified_model.pkl'
+            )
 
     #Meta-Regression (use pre-stored slopes)
-    bundle = joblib.load("../models/metaregression_model.pkl")
+    try:
+        bundle = joblib.load("../models/metaregression_model.pkl")
+    except Exception:
+        bundle = joblib.load("./models/metaregression_model.pkl")
     slopes = bundle["slopes"]  # dict: { insurer: theta_i, ... }
     for insurer in insurers:
         if insurer not in slopes:

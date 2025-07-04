@@ -132,15 +132,29 @@ def train_and_save_neural_network():
         y_pred_bin = (y_pred > 0).astype(int)
         f1 = f1_score(y_true_bin, y_pred_bin)
 
-        # Give coefficients here
-        # --- Coefficient Estimation for ZB_diff ---
+        # --- Coefficient Estimation for ZB_diff using Model Output Difference ---
+        # Find the index of 'ZB_diff' in the feature columns
         zb_diff_index = list(satisfaction_columns).index('ZB_diff')
-        zb_values = X_test[:, zb_diff_index].reshape(-1, 1)
-        zb_values = stats.zscore(zb_values)  # ensure it's standardized
 
-        slope, intercept, r_value, p_value, std_err = stats.linregress(zb_values.flatten(), y_pred)
-        print(f"\nEstimated Coefficient for ZB_diff: {slope:.4f}")
-        print(f"P-value for ZB_diff coefficient: {p_value:.4g}")
+        # Copy X_test for two scenarios: ZB_diff = 0 and ZB_diff = 1
+        X_test_zero = X_test.copy()
+        X_test_one = X_test.copy()
+        X_test_zero[:, zb_diff_index] = 0
+        X_test_one[:, zb_diff_index] = 1
+
+        # Convert to tensors
+        X_test_zero_tensor = torch.tensor(X_test_zero, dtype=torch.float32)
+        X_test_one_tensor = torch.tensor(X_test_one, dtype=torch.float32)
+
+        # Predict for both scenarios
+        with torch.no_grad():
+            y_pred_zero = model(X_test_zero_tensor).numpy().flatten()
+            y_pred_one = model(X_test_one_tensor).numpy().flatten()
+
+        # The coefficient is the average change in prediction when ZB_diff increases from 0 to 1
+        zb_diff_coefficient = np.mean(y_pred_one - y_pred_zero)
+        print(f"\nEstimated Average Effect of Increasing ZB_diff from 0 to 1: {zb_diff_coefficient:.4f}")
+        
 
 
         print(
