@@ -50,7 +50,12 @@ def train_and_save_neural_network():
     #reg_morb_fee_churn()
     #df_merged = merge_churn_with_satisfaction()
     #data load and prep
-    df_merged = load_excel("../data/fm_dem_sat_merged.xlsx")
+    try:
+        df_merged = load_excel("../data/fm_dem_sat_merged.xlsx")
+    except FileNotFoundError:
+        from data_extraction.merge_fee_morbidity_demographics import merge_fm_dm_sat
+        merge_fm_dm_sat()
+        df_merged = load_excel("../data/fm_dem_sat_merged.xlsx")
     df_merged['Mitglieder_pct_change_next']= (df_merged['Mitglieder_diff_next']/df_merged['Mitglieder'])
     df_merged['RF-Entwicklung im Vgl zum Vorjahr'] = df_merged['RF-Entwicklung im Vgl zum Vorjahr'].replace('-', 0).astype(float)
     df_merged = df_merged.fillna(df_merged.median(numeric_only=True))
