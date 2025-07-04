@@ -5,7 +5,7 @@ import sys
 import os
 
 
-#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from analysis_code.full_neural_network import NeuralNetwork, MODEL_PATH, SCALER_PATH, CATEGORICAL_COLS_PATH, SATISFACTION_COLS_PATH
 from data_extraction.utils import column_name_cleanup
 from paper.test import starting_point
@@ -191,7 +191,8 @@ def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
     """
 
     # One-hot encode and ensure all columns exist
-    row = pd.get_dummies(row, columns=categorical_cols, drop_first=True)
+    valid_categorical_cols = [col for col in categorical_cols if col in row.columns]
+    row = pd.get_dummies(row, columns=valid_categorical_cols, drop_first=True)
     missing_cols = [col for col in satisfaction_columns if col not in row.columns]
     if missing_cols:
         row = pd.concat([row, pd.DataFrame(0, index=row.index, columns=missing_cols)], axis=1)
