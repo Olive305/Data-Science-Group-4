@@ -183,9 +183,12 @@ def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
 
     # Set zb_diff and average values for other columns
     row['ZB_diff'] = zb_diff
+    """
+    print(row)
     for col in satisfaction_columns:
         if col not in ['ZB_diff'] and col in df.columns:
             row[col] = df[col].mean()
+    """
 
     # One-hot encode and ensure all columns exist
     row = pd.get_dummies(row, columns=categorical_cols, drop_first=True)
@@ -208,11 +211,13 @@ def pred_nn(insurer: str='aokbadenwürttemberg', zb_diff: float=0.1):
     with torch.no_grad():
         predictions = model(X_input_tensor).numpy().flatten()
     #print(row['Mitglieder'].to_numpy()[0])
-    #result = predictions[0]* row['Mitglieder']
+    #print(predictions[0]/100)
     return ((predictions[0]/100) *row['Mitglieder'].to_numpy()[0])/100
 
 
 
 if __name__ == '__main__':
-    print(full_pred(['aokbadenwürttemberg','aokplus']))
-    #print(pred_nn('aokplus'))
+    #print(full_pred(['aokbadenwürttemberg','aokplus']))
+    print(pred_nn(insurer='aokplus'))
+    print(pred_nn(insurer='aokbadenwürttemberg'))
+    print(pred_nn(insurer='bkkpwc'))
